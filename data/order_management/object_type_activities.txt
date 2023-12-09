@@ -1,0 +1,54 @@
+{
+  "customers": [
+    "confirm order",
+    "place order"
+  ],
+  "employees": [
+    "pick item",
+    "confirm order",
+    "package delivered",
+    "reorder item",
+    "send package",
+    "item out of stock",
+    "failed delivery",
+    "create package"
+  ],
+  "items": [
+    "pay order",
+    "pick item",
+    "confirm order",
+    "package delivered",
+    "reorder item",
+    "send package",
+    "item out of stock",
+    "payment reminder",
+    "failed delivery",
+    "create package",
+    "place order"
+  ],
+  "orders": [
+    "confirm order",
+    "payment reminder",
+    "pay order",
+    "place order"
+  ],
+  "products": [
+    "pay order",
+    "pick item",
+    "confirm order",
+    "package delivered",
+    "reorder item",
+    "send package",
+    "item out of stock",
+    "payment reminder",
+    "failed delivery",
+    "create package",
+    "place order"
+  ],
+  "packages": [
+    "send package",
+    "failed delivery",
+    "package delivered",
+    "create package"
+  ]
+}
