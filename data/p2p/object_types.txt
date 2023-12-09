@@ -1,0 +1,1 @@
+["goods receipt", "invoice receipt", "material", "payment", "purchase_order", "purchase_requisition", "quotation"]
