@@ -5,13 +5,11 @@ from typing import Tuple
 
 import pandas as pd
 import pm4py
-import numpy as np
-from bokeh.plotting import figure, save, gridplot, output_file, output_notebook
-import sklearn
-import glob
-import os
 
 from pm4py import OCEL
+from pm4py.algo.discovery.ocel.ocpn import algorithm as ocpn_discovery
+import networkx as nx
+import matplotlib.pyplot as plt
 
 from pm4py.objects.petri_net.exporter import exporter as pnml_exporter
 from pm4py.objects.petri_net.importer import importer as pnml_importer
@@ -19,6 +17,7 @@ from pm4py.objects.petri_net.importer import importer as pnml_importer
 import customJsonSetEncoder
 
 OM_PATH = 'data/order_management/order-management.json'
+DATA_PATH = 'data/order_management/'
 
 
 def discover_objects_graph(log: OCEL):
@@ -36,7 +35,25 @@ def discover_objects_graph(log: OCEL):
         'object_codeath': obj_codeath
     }
 
+    save_object_graph(object_graphs)
     return object_graphs
+
+
+def save_object_graph(object_graphs: dict):
+    graph_types = ['object_interaction',
+                   'object_descendants',
+                   'object_inheritance',
+                   'object_cobirth',
+                   'object_codeath']
+
+    for graph_type in graph_types:
+        obj_interaction = pm4py.discover_objects_graph(order_log, graph_type=graph_type)
+        graph = nx.Graph(incoming_graph_data=obj_interaction)
+
+        nx.write_gexf(graph, DATA_PATH+graph_type+'.gexf')
+        nx.write_graphml(graph, DATA_PATH+graph_type+'.graphml')
+        nx.draw(graph, with_labels=True)
+        plt.savefig(DATA_PATH+graph_type+'.png')
 
 
 def read_order_management():
@@ -61,11 +78,12 @@ def process_order_log(orderlog: OCEL):
     object_count_dictionary = pm4py.ocel.ocel_objects_ot_count(orderlog)
     object_interaction_summary = pm4py.ocel.ocel_objects_interactions_summary(orderlog)
 
+
 def create_pnml(filename: string, net: Tuple):
-    folder = 'data/order_management/'
     file_ending = '.pnml'
-    file_path = folder + filename + file_ending
+    file_path = DATA_PATH + filename + file_ending
     pm4py.write.write_pnml(petri_net=net[0], file_path=file_path, initial_marking=net[1], final_marking=net[2])
+
 
 def read_pnml(filepath: string):
     # Example of loading a Petri net (both methods do the same
@@ -75,21 +93,24 @@ def read_pnml(filepath: string):
 
     return pm4py.read.read_pnml(file_path=filepath)
 
+def todo(log: OCEL):
+    # ["orders", "items", "packages", "customers", "products", "employees"]
+    orders_cluster = pm4py.ocel.cluster_equivalent_ocel(ocel=order_log, object_type='orders')
+
 if __name__ == '__main__':
     order_log = read_order_management()
 
-    order_petri_net = pm4py.ocel.discover_oc_petri_net(order_log)  # ("im" for traditional; "imd" for the faster
-    # inductive miner directly-follows)
+    ocpn = ocpn_discovery.apply(order_log)
 
-    create_pnml('packages', order_petri_net['petri_nets']['packages'])
-    create_pnml('items', order_petri_net['petri_nets']['items'])
-    create_pnml('products', order_petri_net['petri_nets']['products'])
-    create_pnml('customers', order_petri_net['petri_nets']['customers'])
-    create_pnml('employees', order_petri_net['petri_nets']['employees'])
+    # del_dup_log = pm4py.ocel.ocel_drop_duplicates(order_log)
+    # obj_graph_dict = discover_objects_graph(del_dup_log)
+    # order_petri_net = pm4py.ocel.discover_oc_petri_net(order_log)  # ("im" for traditional; "imd" for the faster
+    # inductive miner directly-follows)
 
     # gviz_graph = pm4py.visualization.petri_net.visualizer.apply(orders_petri_net[0])
     # pm4py.visualization.ocel.ocpn.visualizer.save(gviz_graph, 'data/order_management/OM_Petri_Net.gviz')
     # pm4py.visualization.ocel.ocpn.visualizer.view(gviz_graph)
 
+    print(" ")
     # order_DFG = pm4py.ocel.discover_ocdfg(order_log)
     # process_order_log(order_log)
