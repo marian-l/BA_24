@@ -1,4 +1,3 @@
-# This is a sample Python script.
 import json
 import string
 from typing import Tuple
@@ -10,9 +9,6 @@ from pm4py import OCEL
 from pm4py.algo.discovery.ocel.ocpn import algorithm as ocpn_discovery
 import networkx as nx
 import matplotlib.pyplot as plt
-
-from pm4py.objects.petri_net.exporter import exporter as pnml_exporter
-from pm4py.objects.petri_net.importer import importer as pnml_importer
 
 import customJsonSetEncoder
 
@@ -35,7 +31,7 @@ def discover_objects_graph(log: OCEL):
         'object_codeath': obj_codeath
     }
 
-    save_object_graph(object_graphs)
+    # save_object_graph(object_graphs)
     return object_graphs
 
 
@@ -97,20 +93,30 @@ def todo(log: OCEL):
     # ["orders", "items", "packages", "customers", "products", "employees"]
     orders_cluster = pm4py.ocel.cluster_equivalent_ocel(ocel=order_log, object_type='orders')
 
+    ocpn = ocpn_discovery.apply(log)
+
+    pm4py.algo.discovery.ocel.ocdfg.algorithm.apply()
+
+
+def try_filtering(log: OCEL):
+    pm4py.filtering.filter_between(log)
+    pm4py.filtering.filter_prefixes(log) # returns the activities before the given activity
+    pm4py.filtering.filter_suffixes(log)
+    pm4py.filtering.filter_variants(log)
+
+
 if __name__ == '__main__':
     order_log = read_order_management()
 
-    ocpn = ocpn_discovery.apply(order_log)
+    # todo(order_log)
+    # print(order_log.get_summary())
+    # print('\n')
+    # print(order_log.get_extended_table())
 
-    # del_dup_log = pm4py.ocel.ocel_drop_duplicates(order_log)
-    # obj_graph_dict = discover_objects_graph(del_dup_log)
-    # order_petri_net = pm4py.ocel.discover_oc_petri_net(order_log)  # ("im" for traditional; "imd" for the faster
-    # inductive miner directly-follows)
+    file = open(DATA_PATH+'LogAsDataframe.txt', 'a')
+    file.write(order_log.get_extended_table().to_string())
 
-    # gviz_graph = pm4py.visualization.petri_net.visualizer.apply(orders_petri_net[0])
-    # pm4py.visualization.ocel.ocpn.visualizer.save(gviz_graph, 'data/order_management/OM_Petri_Net.gviz')
-    # pm4py.visualization.ocel.ocpn.visualizer.view(gviz_graph)
+
+    # try_filtering(order_log)
 
     print(" ")
-    # order_DFG = pm4py.ocel.discover_ocdfg(order_log)
-    # process_order_log(order_log)
