@@ -108,7 +108,6 @@ def try_filtering(log: OCEL):
 if __name__ == '__main__':
     order_log = read_order_management()
 
-    # todo(order_log)
     # print(order_log.get_summary())
     # print('\n')
     # print(order_log.get_extended_table())
