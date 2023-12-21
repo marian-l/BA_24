@@ -1,0 +1,31 @@
+At our company, customers place orders (place order) for different products in varying amounts.
+Each product type has a price and a weight. In the current market situation, there is an inflation that irregularly leads to an increase of prices.
+These price rises have a negative impact on customers’ purchasing power, i.e., on order volumes.
+
+When a customer places an order, this order is assigned to an employee of our company’s sales department.
+To foster customer satisfaction, our company has a single-face-to-customer policy.
+This means that per customer there is one primary sales representative who ought to render all services related to that customer.
+If that first representative is unavailable, a second sales representative should take care of the order.
+Should this employee be also unavailable, the order has to be managed by another employee.
+The tasks of sales employees comprise the registration (confirm order) as well as payment processing (payment reminder, pay order).
+
+In parallel to this, the shipment of goods is prepared.
+For this, the stock of our company is checked by an employee of the warehousing department for the availability of the ordered items.
+If necessary, the warehouser reorders the item (item out of stock, reorder item).
+Items ready for shipment are collected (pick item) for the placement into packages that are addressed to single customers.
+Here, it may happen that a package content relates to multiple orders, and order volumes are distributed over multiple packages.
+
+After all items allocated to a package have been picked, the package is compiled by a warehousing employee (create package).
+Later on, this package is picked up by a shipment employee for transport (send package).
+According to another policy, a warehousing employee should provide assistance to the shipment employee in loading the package.
+However, oftentimes shippers act contrary to that policy and load packages alone or together with a second shipment employee.
+Finally, the package is shipped. Deliveries may fail repeatedly (failed delivery) until successful delivery (package delivered).
+
+https://www.ocel-standard.org/event-logs/simulations/order-management/
+
+Produkt: {Preis, Gewicht}
+Preise steigen.
+
+Eine Bestellung ist immer einem einzigen Mitarbeiter zugeordnet, um die Kundenbeziehung zu verbessern.
+Der Mitarbeiter übersieht die Registrierung der Bestellung für die Mitarbeiter im Lagerhaus und den Bezahlprozess.
+
