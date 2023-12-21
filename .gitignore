@@ -11111,6 +11111,7 @@
 /data/order-management-zip/object_Products.csv
 /data/order-management-zip/order-management.cpn
 /data/order-management-zip/sim-utils.sml
+/data/order_management/graphs/objects_graphs/object_codeath/*.png
 /data/ContainerLogistics/ContainerLogistics.json
 /data/ContainerLogistics/ContainerLogistics.sqlite
 /data/ContainerLogistics/ContainerLogistics.xml
