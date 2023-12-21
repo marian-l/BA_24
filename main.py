@@ -1,9 +1,11 @@
 import json
 import string
 from typing import Tuple
+from varname import nameof
 
 import pandas as pd
 import pm4py
+from networkx import connected_components
 
 from pm4py import OCEL
 from pm4py.algo.discovery.ocel.ocpn import algorithm as ocpn_discovery
@@ -13,6 +15,12 @@ import matplotlib.pyplot as plt
 import customJsonSetEncoder
 
 OM_PATH = 'data/order_management/order-management.json'
+
+GRAPH_DATA_PATH = 'data/order_management/graphs/'
+PETRI_NET = 'data/order_management/graphs/PetriNetModelLanguage/'
+
+TEXT_DATA_PATH = 'data/order_management/text/'
+
 DATA_PATH = 'data/order_management/'
 
 
@@ -23,33 +31,54 @@ def discover_objects_graph(log: OCEL):
     obj_cobirth = pm4py.discover_objects_graph(log, graph_type="object_cobirth")
     obj_codeath = pm4py.discover_objects_graph(log, graph_type="object_codeath")
 
-    object_graphs = {
-        'object interaction': obj_interaction,
-        'object descendants': obj_descendants,
-        'object_inheritance': obj_inheritance,
-        'object_cobirth': obj_cobirth,
-        'object_codeath': obj_codeath
-    }
+    object_graphs = [
+        obj_interaction,
+        obj_descendants,
+        obj_inheritance,
+        obj_cobirth,
+        obj_codeath
+    ]
 
-    # save_object_graph(object_graphs)
     return object_graphs
 
 
-def save_object_graph(object_graphs: dict):
-    graph_types = ['object_interaction',
-                   'object_descendants',
-                   'object_inheritance',
-                   'object_cobirth',
-                   'object_codeath']
+def save_object_interactions(object_graphs: list[set[tuple[str, str]]]):
+    i = 0
+    for object_graph in object_graphs:
+        f = open(DATA_PATH + 'text/object_interactions/' + str(i) + '.txt', 'x')
+        f.write(object_graph.__str__())
+        i += 1
 
-    for graph_type in graph_types:
-        obj_interaction = pm4py.discover_objects_graph(order_log, graph_type=graph_type)
-        graph = nx.Graph(incoming_graph_data=obj_interaction)
 
-        nx.write_gexf(graph, DATA_PATH+graph_type+'.gexf')
-        nx.write_graphml(graph, DATA_PATH+graph_type+'.graphml')
-        nx.draw(graph, with_labels=True)
-        plt.savefig(DATA_PATH+graph_type+'.png')
+def save_object_graph(object_graphs: list[set[tuple[str, str]]]):
+    # Problem: Für alle Graphen außer Object-Codeath ergibt sich ein einziger, großer Eintrag, der nicht in weitere
+    # Subgraphen unterteilt wird.
+    for graph_type in object_graphs:
+        graph = nx.Graph(incoming_graph_data=graph_type)  # undirected Graph
+        # graph has a list of nodes type NodeView
+
+        connected_components_result = connected_components(graph)
+        largest_cc = max(nx.connected_components(graph), key=len)
+        list_of_cc = [len(c) for c in sorted(nx.connected_components(graph), key=len, reverse=True)]
+
+        di_graph = nx.DiGraph(incoming_graph_data=graph_type)  # directed Graph
+        multi_graph = nx.MultiGraph(incoming_graph_data=graph_type, multigraph_input=True)  # undirected Multigraph
+        di_multi_graph = nx.MultiDiGraph(incoming_graph_data=graph_type, multigraph_input=True)  # Directed MultiGraph.
+
+        # https://stackoverflow.com/questions/47892944/python-networkx-find-a-subgraph-in-a-directed-graph-from-a-node-as-root
+        something = (graph.subgraph(c) for c in connected_components(graph))
+
+        # https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.components.connected_components.html
+        subgraph_enumeration = [graph.subgraph(c).copy() for c in connected_components(graph)]
+
+        for i, subgraph in enumerate(subgraph_enumeration):
+            nx.write_gexf(graph, DATA_PATH + graph_type + '.gexf')
+            nx.write_graphml(graph, DATA_PATH + graph_type + '.graphml')
+            plt.figure()
+            nx.draw(subgraph, with_labels=True)
+            plt.savefig(DATA_PATH + nameof(
+                graph_type) + '_' + i + '.png')  # https://stackoverflow.com/questions/1534504/convert-variable-name-to-string
+            plt.close()
 
 
 def read_order_management():
@@ -70,10 +99,6 @@ def process_order_log(orderlog: OCEL):
     # perform flattening for different algorithms only available for traditional event logs
     flat_log = pm4py.ocel.ocel_flattening(orderlog, object_types[0])
 
-    # investigate object types
-    object_count_dictionary = pm4py.ocel.ocel_objects_ot_count(orderlog)
-    object_interaction_summary = pm4py.ocel.ocel_objects_interactions_summary(orderlog)
-
 
 def create_pnml(filename: string, net: Tuple):
     file_ending = '.pnml'
@@ -82,40 +107,72 @@ def create_pnml(filename: string, net: Tuple):
 
 
 def read_pnml(filepath: string):
-    # Example of loading a Petri net (both methods do the same
+    # Example of loading a Petri net (both methods do the same)
 
     # loaded_orders_petri_net = pnml_importer.apply('data/order_management/orders.pnml')
     # loaded_orders_petri_net2 = pm4py.read.read_pnml(file_path='data/order_management/orders.pnml')
 
     return pm4py.read.read_pnml(file_path=filepath)
 
-def todo(log: OCEL):
+
+def object_codeath_graphs(object_codeath: [set[tuple[str, str]]]):  # was executed
+    graph = nx.Graph(incoming_graph_data=object_codeath)
+
+    subgraph_enumeration = [graph.subgraph(c).copy() for c in connected_components(graph)]
+
+    for i, subgraph in enumerate(subgraph_enumeration):
+        plt.figure()
+        nx.draw(subgraph, with_labels=True)
+        plt.savefig(DATA_PATH + 'graphs/objects_graphs/object_codeath/' + str(i) + '.png')
+        plt.close()
+
+
+def _todo(log: OCEL):
     # ["orders", "items", "packages", "customers", "products", "employees"]
-    orders_cluster = pm4py.ocel.cluster_equivalent_ocel(ocel=order_log, object_type='orders')
+    orders_cluster = pm4py.ocel.cluster_equivalent_ocel(ocel=log, object_type='orders')
 
     ocpn = ocpn_discovery.apply(log)
 
     pm4py.algo.discovery.ocel.ocdfg.algorithm.apply()
 
+    # investigate object types
+    object_count_dictionary = pm4py.ocel.ocel_objects_ot_count(log)
+    object_interaction_summary = pm4py.ocel.ocel_objects_interactions_summary(log)
 
-def try_filtering(log: OCEL):
     pm4py.filtering.filter_between(log)
-    pm4py.filtering.filter_prefixes(log) # returns the activities before the given activity
+    pm4py.filtering.filter_prefixes(log)  # returns the activities before the given activity
     pm4py.filtering.filter_suffixes(log)
     pm4py.filtering.filter_variants(log)
 
+    # ("im" for traditional; "imd" for the faster inductive miner directly-follows)
+    order_petri_net = pm4py.ocel.discover_oc_petri_net(log, 'im', True)
+    order_petri_net2 = pm4py.ocel.discover_oc_petri_net(log, 'imd', True)
+    order_petri_net3 = pm4py.ocel.discover_oc_petri_net(log, 'im', False)
+    order_petri_net4 = pm4py.ocel.discover_oc_petri_net(log, 'im', False)
+
+    pm4py.visualization.petri_net.visualizer.apply(order_petri_net)
+
+
+def try_filtering(log: OCEL):
+    pass
+
+
+def create_process_tree(net: Tuple):
+    petri_net = net[0]
+    marking1 = net[1]
+    marking2 = net[2]
+
+    # ProcessTree = pm4py.convert_to_process_tree(petri_net, marking1, marking2)  # is empty. not supported?
+
+def create_clusters(log: OCEL):
+    orders_cluster = pm4py.ocel.cluster_equivalent_ocel(ocel=log, object_type='orders', max_objs=200)
+    f = open(TEXT_DATA_PATH + 'orders_cluster.txt', 'x')
+    f.write(orders_cluster.__str__())
+
 
 if __name__ == '__main__':
-    order_log = read_order_management()
+    log = read_order_management()
 
-    # print(order_log.get_summary())
-    # print('\n')
-    # print(order_log.get_extended_table())
-
-    file = open(DATA_PATH+'LogAsDataframe.txt', 'a')
-    file.write(order_log.get_extended_table().to_string())
-
-
-    # try_filtering(order_log)
+    # _todo()
 
     print(" ")
