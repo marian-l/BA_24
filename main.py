@@ -232,7 +232,7 @@ def ocel_package_functions(log: OCEL):
     O2O_enriched_ocel = pm4py.ocel.ocel_o2o_enrichment(log, discover_objects_graph(log))
     E2O_enriched_ocel = pm4py.ocel.ocel_e2o_lifecycle_enrichment(log)
 
-    # TODO
+    # _TODO
     # pm4py.ocel.sample_ocel_connected_components(log)
 
     correctly_ordered_log = pm4py.ocel.ocel_add_index_based_timedelta(ocel=log)
