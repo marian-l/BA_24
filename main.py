@@ -1,6 +1,9 @@
-import json
 import string
+import sys
 from typing import Tuple
+
+import numpy as np
+import pandas
 from varname import nameof
 
 import pandas as pd
@@ -152,6 +155,8 @@ def _todo(log: OCEL):
 
     pm4py.visualization.petri_net.visualizer.apply(order_petri_net)
 
+    var = pm4py.objects.ocel.validation.jsonocel.apply()
+
 
 def try_filtering(log: OCEL):
     pass
@@ -164,14 +169,95 @@ def create_process_tree(net: Tuple):
 
     # ProcessTree = pm4py.convert_to_process_tree(petri_net, marking1, marking2)  # is empty. not supported?
 
+
 def create_clusters(log: OCEL):
     orders_cluster = pm4py.ocel.cluster_equivalent_ocel(ocel=log, object_type='orders', max_objs=200)
     f = open(TEXT_DATA_PATH + 'orders_cluster.txt', 'x')
     f.write(orders_cluster.__str__())
 
 
+def show_library_versions():
+    pd.DataFrame(
+        [
+            ['pandas', pd.__version__],
+            ['numpy ', np.__version__],
+            ['matplotlib', sys.modules['matplotlib'].__version__],
+            ['ipywidgets', sys.modules['ipywidgets'].__version__],
+            ['pm4py', pm4py.__version__],
+        ],
+        columns=['package', 'version']
+    ).set_index('package')
+
+
+def visualize_ocdfg(log: OCEL):
+    ocdfg = pm4py.ocel.discover_ocdfg(log)
+    ocdfg_digraph = pm4py.visualization.ocel.ocdfg.visualizer.apply(ocdfg)
+    # pm4py.visualization.ocel.ocdfg.visualizer.save(gviz=ocdfg_digraph, output_file_path=GRAPH_DATA_PATH + 'gviz/ocdfg_digraph.png')
+    pm4py.visualization.ocel.ocdfg.visualizer.view(ocdfg_digraph)
+
+
+def evaluate_edge_metrics(log):
+    result = pm4py.statistics.ocel.edge_metrics.find_associations_per_edge(log)
+
+    aggregate_total_objects = pm4py.statistics.ocel.edge_metrics.aggregate_total_objects(result)
+    # A dictionary associating to each object type another dictionary where to each edge (activity couple)
+    # all the triples (source event, target event, object) are associated.
+
+    aggregate_unique_objects = pm4py.statistics.ocel.edge_metrics.aggregate_unique_objects(result)
+    # A dictionary associating to each object type another dictionary where to each edge (activity couple) all the involved objects are associated.
+
+    aggregate_ev_couples = pm4py.statistics.ocel.edge_metrics.aggregate_ev_couples(result)
+    # A dictionary associating to each object type another dictionary where to each edge (activity couple) all the couples of related events are associated.
+
+    performance_ev_couples = (
+        pm4py.statistics.ocel.edge_metrics.performance_calculation_ocel_aggregation(log, aggregate_ev_couples))
+    performance_total_objects = (
+        pm4py.statistics.ocel.edge_metrics.performance_calculation_ocel_aggregation(log, aggregate_total_objects))
+    # For each object type, associate a dictionary where to each activity couple all the times between the activities are recorded.
+
+
+def save_to_file(data, filepath: string, name: string):
+    f = open(filepath + name + '.txt', 'x')
+    # if data is string:
+    #     f.write(data)
+    # elif data is pandas.DataFrame:
+    #     data.to_csv(filepath + name + '.txt', sep='\t', index=False)
+    if type(data) == string:
+        f.write(data)
+    elif type(data) == pandas.DataFrame:
+        data.to_csv(filepath + name + '.txt', sep='\t', index=False)
+    f.close()
+
+def ocel_package_functions(log: OCEL):
+    O2O_enriched_ocel = pm4py.ocel.ocel_o2o_enrichment(log, discover_objects_graph(log))
+    E2O_enriched_ocel = pm4py.ocel.ocel_e2o_lifecycle_enrichment(log)
+
+    # TODO
+    # pm4py.ocel.sample_ocel_connected_components(log)
+
+    correctly_ordered_log = pm4py.ocel.ocel_add_index_based_timedelta(ocel=log)
+
+
+def validate_log(path: string, schema: string):
+    pass
+
+
 if __name__ == '__main__':
     log = read_order_management()
+
+# Validation of JSON-OCEL and XML-OCEL: using the command ocel.validate(log path, schema path), it is possible to validate an event log against
+# the OCEL schema. The schemas for JSON-OCEL and XML-OCEL are available inside the folder schemas of the repository.
+
+
+    validate_log(OM_PATH, )
+
+    save_to_file(pm4py.ocel.ocel_temporal_summary(log), TEXT_DATA_PATH, 'temporal_summary')
+    save_to_file(pm4py.ocel.ocel_objects_summary(log), TEXT_DATA_PATH, 'objects_summary')
+    save_to_file(pm4py.ocel.ocel_objects_interactions_summary(log), TEXT_DATA_PATH, 'object_interactions_summary')
+
+    # visualize_ocdfg(log)
+
+    # evaluate_edge_metrics(log)
 
     # _todo()
 
