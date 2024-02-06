@@ -80,11 +80,6 @@ def save_object_graph(object_graphs: list[set[tuple[str, str]]]):
             plt.close()
 
 
-def read_order_management():
-    inner_order_log = pm4py.read.read_ocel2_json(OM_PATH)
-    return inner_order_log
-
-
 def process_order_log(orderlog: OCEL):
     # order_obj_graphs = discover_objects_graph(orderlog)
     # object_types = pm4py.ocel.ocel_get_object_types(orderlog)
@@ -165,13 +160,15 @@ def try_filtering(log: OCEL):
     pass
 
 
-def create_process_tree(net: Tuple):
-    petri_net = net[0]
-    marking1 = net[1]
-    marking2 = net[2]
+def create_process_tree(ocpn):
+    petri_net_list = ocpn['petri_nets']
 
-    # ProcessTree = pm4py.convert_to_process_tree(petri_net, marking1, marking2)  # is empty. not supported?
+    for petri_net in petri_net_list:
+        im = pm4py.objects.petri_net.utils.initial_marking.discover_initial_marking(ocpn['petri_nets'][petri_net][0])
+        fm = pm4py.objects.petri_net.utils.final_marking.discover_final_marking(ocpn['petri_nets'][petri_net][0])
 
+    process_tree = pm4py.convert_to_process_tree((petri_net, im, fm))  # is empty. not supported?
+    print(process_tree)
 
 def create_clusters(log: OCEL):
     orders_cluster = pm4py.ocel.cluster_equivalent_ocel(ocel=log, object_type='orders', max_objs=200)
@@ -241,16 +238,6 @@ def save_to_file(data, filepath: string, name: string):
     f.close()
 
 
-def ocel_package_functions(log: OCEL):
-    O2O_enriched_ocel = pm4py.ocel.ocel_o2o_enrichment(log, discover_objects_graph(log))
-    E2O_enriched_ocel = pm4py.ocel.ocel_e2o_lifecycle_enrichment(log)
-
-    # _TODO
-    # pm4py.ocel.sample_ocel_connected_components(log)
-
-    correctly_ordered_log = pm4py.ocel.ocel_add_index_based_timedelta(ocel=log)
-
-
 def validate_log():
     return pm4py.objects.ocel.validation.jsonocel.apply(OM_PATH, 'data/schema.json')
 
@@ -315,8 +302,8 @@ def get_soundness(ocpn):
     petri_net_list = ocpn['petri_nets']
 
     for petri_net in petri_net_list:
-        fm = pm4py.objects.petri_net.utils.final_marking.discover_final_marking(ocpn['petri_nets'][petri_net][0])
         im = pm4py.objects.petri_net.utils.initial_marking.discover_initial_marking(ocpn['petri_nets'][petri_net][0])
+        fm = pm4py.objects.petri_net.utils.final_marking.discover_final_marking(ocpn['petri_nets'][petri_net][0])
 
         sound = (pm4py.analysis.check_soundness(ocpn['petri_nets'][petri_net][0], im, fm))
 
@@ -333,7 +320,7 @@ def get_soundness(ocpn):
 
 
 if __name__ == '__main__':
-    log = read_order_management()
+    log = pm4py.read.read_ocel2_json(OM_PATH)
 
     place_confirm_order_log = pm4py.filter_ocel_event_attribute(log, "ocel:activity", ["place order"], positive=True)
     ocpn = pm4py.discover_oc_petri_net(place_confirm_order_log, diagnostics_with_tbr=True)
