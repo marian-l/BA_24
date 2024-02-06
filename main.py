@@ -301,10 +301,51 @@ def save_temporal_summary(log):
                            ):
         save_to_file(temporal_summary_dataframe, TEXT_DATA_PATH, 'temporal_summary')
 
+def get_all_keys(d):
+    for key, value in ocpn.items():
+        yield key
+        if isinstance(value, dict):
+            yield from get_all_keys(value)
+
+
+
+def get_soundness(ocpn):
+    soundness = []
+
+    petri_net_list = ocpn['petri_nets']
+
+    for petri_net in petri_net_list:
+        fm = pm4py.objects.petri_net.utils.final_marking.discover_final_marking(ocpn['petri_nets'][petri_net][0])
+        im = pm4py.objects.petri_net.utils.initial_marking.discover_initial_marking(ocpn['petri_nets'][petri_net][0])
+
+        sound = (pm4py.analysis.check_soundness(ocpn['petri_nets'][petri_net][0], im, fm))
+
+        diagnostics_list = []
+        diagnostics = []
+
+        for val in sound[1].values():
+            diagnostics.append(val)
+
+        diagnostics_list.append([petri_net, diagnostics[9]])
+        soundness.append(diagnostics_list)
+
+    return soundness
+
+
 if __name__ == '__main__':
     log = read_order_management()
 
-    count_sales_person_per_customer(log)
+    place_confirm_order_log = pm4py.filter_ocel_event_attribute(log, "ocel:activity", ["place order"], positive=True)
+    ocpn = pm4py.discover_oc_petri_net(place_confirm_order_log, diagnostics_with_tbr=True)
+
+    soundness = get_soundness(ocpn)
+
+    print(soundness)
+
+
+    # ocpn = pm4py.discover_oc_petri_net(log, diagnostics_with_tbr=True)
+    # pm4py.view_ocpn(ocpn)
+    # pm4py.save_vis_petri_net(petri_net=ocpn, initial_marking=ocpn['initial marking'])
 
     # process_order_log(log) # llm_methods(log) # get_bpmn(log) # visualize_ocdfg(log) # evaluate_edge_metrics(log) # _todo()
 
