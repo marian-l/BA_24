@@ -3,7 +3,6 @@ import sys
 from typing import Tuple
 
 import numpy as np
-import pandas
 from varname import nameof
 
 import pandas as pd
@@ -18,12 +17,9 @@ import matplotlib.pyplot as plt
 import customJsonSetEncoder
 
 OM_PATH = 'data/order_management/order-management.json'
-
 GRAPH_DATA_PATH = 'data/order_management/graphs/'
 PETRI_NET = 'data/order_management/graphs/PetriNetModelLanguage/'
-
 TEXT_DATA_PATH = 'data/order_management/text/'
-
 DATA_PATH = 'data/order_management/'
 
 
@@ -90,17 +86,26 @@ def read_order_management():
 
 
 def process_order_log(orderlog: OCEL):
-    order_obj_graphs = discover_objects_graph(orderlog)
-    object_types = pm4py.ocel.ocel_get_object_types(orderlog)
-    attribute_names = pm4py.ocel.ocel_get_attribute_names(orderlog)
-    object_type_activities = pm4py.ocel.ocel_object_type_activities(orderlog)
+    # order_obj_graphs = discover_objects_graph(orderlog)
+    # object_types = pm4py.ocel.ocel_get_object_types(orderlog)
+    # attribute_names = pm4py.ocel.ocel_get_attribute_names(orderlog)
+    # object_type_activities = pm4py.ocel.ocel_object_type_activities(orderlog)
 
-    order_petri_net = pm4py.ocel.discover_oc_petri_net(orderlog, 'im',
-                                                       True)  # ("im" for traditional; "imd" for the faster inductive miner directly-follows)
-    pm4py.visualization.petri_net.visualizer.apply(order_petri_net)
+    # ("im" for traditional; "imd" for the faster inductive miner directly-follows)
+    order_petri_net = pm4py.ocel.discover_oc_petri_net(orderlog, 'imd', True)
+    save_to_file(order_petri_net, TEXT_DATA_PATH, "whole_log_im_miner")
+    order_petri_net = [(k, v) for k, v in order_petri_net.items()]
+    save_to_file(order_petri_net, TEXT_DATA_PATH, "whole_log_im_miner_2")
+
+    create_pnml("whole_log_imd_miner", order_petri_net)
+    # pm4py.visualization.petri_net.visualizer.apply(order_petri_net)
+
+    order_petri_net = pm4py.ocel.discover_oc_petri_net(orderlog, 'im', True)
+
+    # pm4py.visualization.petri_net.visualizer.apply(order_petri_net)
 
     # perform flattening for different algorithms only available for traditional event logs
-    flat_log = pm4py.ocel.ocel_flattening(orderlog, object_types[0])
+    # flat_log = pm4py.ocel.ocel_flattening(orderlog, object_types[0])
 
 
 def create_pnml(filename: string, net: Tuple):
@@ -154,8 +159,6 @@ def _todo(log: OCEL):
     order_petri_net4 = pm4py.ocel.discover_oc_petri_net(log, 'im', False)
 
     pm4py.visualization.petri_net.visualizer.apply(order_petri_net)
-
-    var = pm4py.objects.ocel.validation.jsonocel.apply()
 
 
 def try_filtering(log: OCEL):
@@ -224,9 +227,19 @@ def save_to_file(data, filepath: string, name: string):
     #     data.to_csv(filepath + name + '.txt', sep='\t', index=False)
     if type(data) == string:
         f.write(data)
-    elif type(data) == pandas.DataFrame:
+    if type(data) == str:
+        f.write(data)
+    elif type(data) == pd.DataFrame:
         data.to_csv(filepath + name + '.txt', sep='\t', index=False)
+    elif type(data) == list:
+        for item in data:
+            for value in item:
+                f.write(f'{value}\n')
+    elif type(data) == tuple:
+        for key, value in data.items():
+            f.write(f'{key}: {value}\n')
     f.close()
+
 
 def ocel_package_functions(log: OCEL):
     O2O_enriched_ocel = pm4py.ocel.ocel_o2o_enrichment(log, discover_objects_graph(log))
@@ -238,27 +251,61 @@ def ocel_package_functions(log: OCEL):
     correctly_ordered_log = pm4py.ocel.ocel_add_index_based_timedelta(ocel=log)
 
 
-def validate_log(path: string, schema: string):
-    pass
+def validate_log():
+    return pm4py.objects.ocel.validation.jsonocel.apply(OM_PATH, 'data/schema.json')
 
+
+def llm_methods(log):
+    print(pm4py.llm.abstract_ocel_ocdfg(log, include_header=True, include_timestamps=True, max_len=10000))
+
+    print(pm4py.llm.abstract_ocel(log))
+
+    print(pm4py.llm.abstract_ocel_features(log))
+
+    # print(pm4py.llm.abstract_event_stream(log))
+
+
+def get_bpmn(log):
+    pt = pm4py.discovery.discover_process_tree_inductive(log)
+    bpmn = pm4py.convert.convert_to_bpmn(pt)
+
+
+def get_log_info(log):
+    print("log.objects: " + str(log.objects))
+    print("log.e2e: " + str(log.e2e))
+    print("log.changed_field: " + str(log.changed_field))
+    print("log.event_activity: " + str(log.event_activity))
+    print("log.event_id_column: " + str(log.event_id_column))
+    print("log.event_timestamp: " + str(log.event_timestamp))
+    print("log.events: " + str(log.events))
+    print("log.globals: " + str(log.globals))
+    print("log.o2o: " + str(log.o2o))
+    print("log.object_changes: " + str(log.object_changes))
+    print("log.object_id_column: " + str(log.object_id_column))
+    print("log.object_type_column: " + str(log.object_type_column))
+    print("log.parameters: " + str(log.parameters))
+    print("log.qualifier: " + str(log.qualifier))
+    print("log.relations: " + str(log.relations))
+    print("log.get_extended_table: " + str(log.get_extended_table()))
+    print("log.get_summary: " + str(log.get_summary()))
+    print("log.is_ocel20: " + str(log.is_ocel20()))
+
+
+def save_temporal_summary(log):
+    # done
+    temporal_summary_dataframe = pm4py.ocel.ocel_temporal_summary(log)
+
+    with pd.option_context('display.max_rows', None,
+                           'display.max_columns', None,
+                           'display.precision', 3,
+                           ):
+        save_to_file(temporal_summary_dataframe, TEXT_DATA_PATH, 'temporal_summary')
 
 if __name__ == '__main__':
     log = read_order_management()
 
-# Validation of JSON-OCEL and XML-OCEL: using the command ocel.validate(log path, schema path), it is possible to validate an event log against
-# the OCEL schema. The schemas for JSON-OCEL and XML-OCEL are available inside the folder schemas of the repository.
+    count_sales_person_per_customer(log)
 
-
-    validate_log(OM_PATH, )
-
-    save_to_file(pm4py.ocel.ocel_temporal_summary(log), TEXT_DATA_PATH, 'temporal_summary')
-    save_to_file(pm4py.ocel.ocel_objects_summary(log), TEXT_DATA_PATH, 'objects_summary')
-    save_to_file(pm4py.ocel.ocel_objects_interactions_summary(log), TEXT_DATA_PATH, 'object_interactions_summary')
-
-    # visualize_ocdfg(log)
-
-    # evaluate_edge_metrics(log)
-
-    # _todo()
+    # process_order_log(log) # llm_methods(log) # get_bpmn(log) # visualize_ocdfg(log) # evaluate_edge_metrics(log) # _todo()
 
     print(" ")
