@@ -122,24 +122,6 @@ def get_log_info(log):
     print("log.is_ocel20: " + str(log.is_ocel20()))
 
 
-def save_temporal_summary(log):
-    # done
-    temporal_summary_dataframe = pm4py.ocel.ocel_temporal_summary(log)
-
-    with pd.option_context('display.max_rows', None,
-                           'display.max_columns', None,
-                           'display.precision', 3,
-                           ):
-        save_to_file(temporal_summary_dataframe, TEXT_DATA_PATH, 'temporal_summary')
-
-
-def get_all_keys(d):
-    for key, value in d.items():
-        yield key
-        if isinstance(value, dict):
-            yield from get_all_keys(value)
-
-
 def get_soundness(ocpn):
     soundness = []
 
