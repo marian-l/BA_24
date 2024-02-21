@@ -146,7 +146,7 @@ def get_soundness(ocpn):
 
 
 def get_variety_of_ocdfg(ocdfg):
-    ocdfg = pm4py.discover_ocdfg(log)
+    ocdfg = pm4py.discover_ocdfg(log, business_hours=True, business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
 
     thresholds = [0, 10, 50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1500, 2000]
     edge_metrics = ['event_couples', 'unique_objects', 'total_objects']
@@ -278,20 +278,20 @@ def get_deviations_from_aufgabenteilung(ocel):
 def get_object_lifecycle_and_relations(log):
     objects = ['items', 'orders', 'packages', 'products', 'employees', 'customers']
 
-    #print('Nach Objekt gefilterte OCELs: ')
-    #for ocel_object in objects:
+    # print('Nach Objekt gefilterte OCELs: ')
+    # for ocel_object in objects:
     #    print(ocel_object)
     #    print(pm4py.filter_ocel_object_types(ocel=log, obj_types=[ocel_object], positive=True, level=1))
     #    print('\n')
-#
-    #print('Nach Startaktivität gefilterte OCELs: ')
-    #for ocel_object in objects:
+    #
+    # print('Nach Startaktivität gefilterte OCELs: ')
+    # for ocel_object in objects:
     #    print(ocel_object)
     #    print(pm4py.filtering.filter_ocel_start_events_per_object_type(log, ocel_object))
     #    print('\n')
-#
-    #print('Nach Endaktivität gefilterte OCELs: ')
-    #for ocel_object in objects:
+    #
+    # print('Nach Endaktivität gefilterte OCELs: ')
+    # for ocel_object in objects:
     #    print(ocel_object)
     #    print(pm4py.filtering.filter_ocel_end_events_per_object_type(log, ocel_object))
     #    print('\n')
@@ -311,11 +311,11 @@ def get_object_lifecycle_and_relations(log):
     #     sample_cc_ocels.append(pm4py.sample_ocel_connected_components(log))
 
     print("")
-        # pm4py.sample_ocel_objects()
-        # pm4py.filter_ocel_cc_otype()
-        # pm4py.filter_ocel_cc_object()
-        # pm4py.filter_ocel_cc_length()
-        # pm4py.filter_ocel_cc_activity()
+    # pm4py.sample_ocel_objects()
+    # pm4py.filter_ocel_cc_otype()
+    # pm4py.filter_ocel_cc_object()
+    # pm4py.filter_ocel_cc_length()
+    # pm4py.filter_ocel_cc_activity()
 
     # pm4py.filter_ocel_object_types_allowed_activities()
     # pm4py.filter_ocel_object_types()
@@ -336,52 +336,42 @@ from pm4py.algo.transformation.ocel.split_ocel import algorithm as split_ocel
 if __name__ == '__main__':
     log = pm4py.read.read_ocel2_json(OM_PATH)
 
-    filtered_log = pm4py.filter_ocel_cc_activity(log, 'place order')
+    print(log.o2o['ocel:qualifier'].unique())
 
-    ocdfg = pm4py.discover_ocdfg(filtered_log)
+    var = ['comprises' 'is a' 'forwarded by' 'packed by' 'shipped by' 'contains'
+           'primarySalesRep' 'secondarySalesRep' 'places']
 
-    pm4py.view_ocdfg(
-        ocdfg=ocdfg,
-        act_threshold=0,
-        edge_threshold=0,
-        performance_aggregation='mean',
-        annotation='performance',
-        # rankdir=rankdir,
-        # act_metric=act_metric,
-        # edge_metric=edge_metric,
-        # bgcolor=bgcol
-    )
+    order_df = log.o2o[log.o2o['ocel:qualifier'] == 'comprises']
+    customer_df = log.o2o[log.o2o['ocel:qualifier'] == 'places']
+    package_df = log.o2o[log.o2o['ocel:qualifier'] == 'contains']
+    item_df = log.o2o[log.o2o['ocel:qualifier'] == 'is a']
+
+    current = ''
+    result = []
+    count = 0
+
+    for row in order_df.iterrows():
+        if current == '':
+            current = row[1]['ocel:oid']
+        if row[1]['ocel:oid'] == current:
+            count += 1
+        else:
+            result.append([current, count])
+            count = 1
+            current = row[1]['ocel:oid']
+
+    result.sort(key=lambda x: x[1], reverse=True)
+
+    for i in range (0, 20, 1):
+        print(result[i])
+
+    for i in range(-1, -21, -1):
+        print(result[i])
 
     # lst_ocels = split_ocel.apply(log, variant=split_ocel.Variants.ANCESTORS_DESCENDANTS,parameters={"object_type": "orders"})
     # get_object_lifecycle_and_relations(log)
 
     print("--------------------------------------------------------")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     # kein Vorher/Nachher-Unterschied?
     # log = pm4py.ocel.ocel_e2o_lifecycle_enrichment(log)
