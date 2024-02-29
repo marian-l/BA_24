@@ -1,24 +1,11 @@
-import _collections_abc
-import collections
-import os
 import string
-import sys
-from array import array
-from typing import Tuple, Collection
-
 import numpy as np
-from varname import nameof
-
 import pandas as pd
 import pm4py
-from networkx import connected_components
-
-from pm4py import OCEL
-from pm4py.algo.discovery.ocel.ocpn import algorithm as ocpn_discovery
-import networkx as nx
 import matplotlib.pyplot as plt
 
-import customJsonSetEncoder
+from typing import Collection
+from pm4py import OCEL
 
 OM_PATH = 'data/order_management/order-management.json'
 GRAPH_DATA_PATH = 'data/order_management/graphs/'
@@ -28,16 +15,14 @@ DATA_PATH = 'data/order_management/'
 
 
 def show_library_versions():
-    pd.DataFrame(
+    print(pd.DataFrame(
         [
             ['pandas', pd.__version__],
             ['numpy ', np.__version__],
-            ['matplotlib', sys.modules['matplotlib'].__version__],
-            ['ipywidgets', sys.modules['ipywidgets'].__version__],
             ['pm4py', pm4py.__version__],
         ],
         columns=['package', 'version']
-    ).set_index('package')
+    ).set_index('package'))
 
 
 def validate_log():
@@ -115,7 +100,6 @@ def get_variety_of_ocdfg(ocdfg):
                     # act_metric=act_metric,
                     # edge_metric=edge_metric,
                     # bgcolor=bgcolor
-
                 )
 
     def get_ocpn_and_subnets(ocel: OCEL, name: str):
@@ -136,30 +120,27 @@ def get_variety_of_ocdfg(ocdfg):
 def get_object_lifecycle_and_relations(log):
     objects = ['items', 'orders', 'packages', 'products', 'employees', 'customers']
 
-    # print('Nach Objekt gefilterte OCELs: ')
-    # for ocel_object in objects:
-    #    print(ocel_object)
-    #    print(pm4py.filter_ocel_object_types(ocel=log, obj_types=[ocel_object], positive=True, level=1))
-    #    print('\n')
+    print('Nach Objekt gefilterte OCELs: ')
+    for ocel_object in objects:
+       print(ocel_object)
+       print(pm4py.filter_ocel_object_types(ocel=log, obj_types=[ocel_object], positive=True, level=1))
+       print('\n')
     #
-    # print('Nach Startaktivität gefilterte OCELs: ')
-    # for ocel_object in objects:
-    #    print(ocel_object)
-    #    print(pm4py.filtering.filter_ocel_start_events_per_object_type(log, ocel_object))
-    #    print('\n')
+    print('Nach Startaktivität gefilterte OCELs: ')
+    for ocel_object in objects:
+       print(ocel_object)
+       print(pm4py.filtering.filter_ocel_start_events_per_object_type(log, ocel_object))
+       print('\n')
     #
-    # print('Nach Endaktivität gefilterte OCELs: ')
-    # for ocel_object in objects:
-    #    print(ocel_object)
-    #    print(pm4py.filtering.filter_ocel_end_events_per_object_type(log, ocel_object))
-    #    print('\n')
-
-    # temp_ocel = pm4py.sample_ocel_objects(log, 500)
-    # i=0
+    print('Nach Endaktivität gefilterte OCELs: ')
+    for ocel_object in objects:
+       print(ocel_object)
+       print(pm4py.filtering.filter_ocel_end_events_per_object_type(log, ocel_object))
+       print('\n')
 
     print(log.o2o['ocel:qualifier'].unique())
 
-    var = ['comprises' 'is a' 'forwarded by' 'packed by' 'shipped by' 'contains'
+    relations = ['comprises' 'is a' 'forwarded by' 'packed by' 'shipped by' 'contains'
            'primarySalesRep' 'secondarySalesRep' 'places']
 
     order_df = log.o2o[log.o2o['ocel:qualifier'] == 'comprises']
@@ -168,8 +149,6 @@ def get_object_lifecycle_and_relations(log):
     item_df = log.o2o[log.o2o['ocel:qualifier'] == 'is a']
 
     result = []
-
-    # all_dfs = [order_df, customer_df, package_df, item_df]
 
     all_dfs = [order_df, customer_df, package_df
                ]
@@ -379,21 +358,21 @@ def exercise_3_3(ocel):
     warehouse_log = pm4py.filter_ocel_objects(ocel=log, object_identifiers=warehouse_persons, positive=True)
     shipment_log = pm4py.filter_ocel_objects(ocel=log, object_identifiers=shipment_persons, positive=True)
 
-    ocpn = pm4py.discover_oc_petri_net(sales_log)
+    ocpn = pm4py.discover_oc_petri_net(sales_log, diagnostics_with_tbr=True)
     print(get_soundness(ocpn=ocpn))
     pm4py.view_ocpn(ocpn=ocpn)
 
-    ocpn = pm4py.discover_oc_petri_net(warehouse_log)
+    ocpn = pm4py.discover_oc_petri_net(warehouse_log, diagnostics_with_tbr=True)
     print(get_soundness(ocpn=ocpn))
     pm4py.view_ocpn(ocpn=ocpn)
 
-    ocpn = pm4py.discover_oc_petri_net(shipment_log)
+    ocpn = pm4py.discover_oc_petri_net(shipment_log, diagnostics_with_tbr=True)
     print(get_soundness(ocpn=ocpn))
     pm4py.view_ocpn(ocpn=ocpn)
 
-    pm4py.view_ocdfg(ocdfg=pm4py.discover_ocdfg(sales_log))
-    pm4py.view_ocdfg(ocdfg=pm4py.discover_ocdfg(warehouse_log))
-    pm4py.view_ocdfg(ocdfg=pm4py.discover_ocdfg(shipment_log))
+    # pm4py.view_ocdfg(ocdfg=pm4py.discover_ocdfg(sales_log))
+    # pm4py.view_ocdfg(ocdfg=pm4py.discover_ocdfg(warehouse_log))
+    # pm4py.view_ocdfg(ocdfg=pm4py.discover_ocdfg(shipment_log))
 
 
 def exercise_3_4(ocel):
@@ -475,17 +454,17 @@ def exercise_3_5(ocel):
     warehousers_helping_shippers_log = pm4py.filter_ocel_objects(ocel=send_package_ocel, object_identifiers=packages)
 
     # Zur Absicherung OCPNs mit Diagnostiken herstellen, da gefiltert wurde
-    # ocpn = pm4py.discover_oc_petri_net(only_shipper_log, diagnostics_with_tbr=True)
-    # print(get_soundness(ocpn=ocpn))
-    # pm4py.view_ocpn(ocpn=ocpn)
-#
-    # ocpn = pm4py.discover_oc_petri_net(shippers_helping_shippers_log, diagnostics_with_tbr=True)
-    # print(get_soundness(ocpn=ocpn))
-    # pm4py.view_ocpn(ocpn=ocpn)
-#
-    # ocpn = pm4py.discover_oc_petri_net(warehousers_helping_shippers_log, diagnostics_with_tbr=True)
-    # print(get_soundness(ocpn=ocpn))
-    # pm4py.view_ocpn(ocpn=ocpn)
+    ocpn = pm4py.discover_oc_petri_net(only_shipper_log, diagnostics_with_tbr=True)
+    print(get_soundness(ocpn=ocpn))
+    pm4py.view_ocpn(ocpn=ocpn)
+
+    ocpn = pm4py.discover_oc_petri_net(shippers_helping_shippers_log, diagnostics_with_tbr=True)
+    print(get_soundness(ocpn=ocpn))
+    pm4py.view_ocpn(ocpn=ocpn)
+
+    ocpn = pm4py.discover_oc_petri_net(warehousers_helping_shippers_log, diagnostics_with_tbr=True)
+    print(get_soundness(ocpn=ocpn))
+    pm4py.view_ocpn(ocpn=ocpn)
 
     ocdfg = filter_ocdfg(pm4py.discover_ocdfg(only_shipper_log))
     pm4py.view_ocdfg(ocdfg=ocdfg, annotation='performance', performance_aggregation='mean')
@@ -552,37 +531,118 @@ def exercise_3_8(ocel):
     orders_with_secondary_log = pm4py.filter_ocel_objects(ocel, orders_with_secondary)
     orders_with_other_log = pm4py.filter_ocel_objects(ocel, orders_with_other)
 
-    # OCELs auswerten
-    ocdfg = pm4py.discover_ocdfg(orders_with_primary_log, business_hours=True,
-                                 business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
+    # 1754 196 50
 
-    # den Durchschnitt verfälschende 0.0 Werte herausfiltern
+    # PrimarySalesRep
+    ocdfg = pm4py.discover_ocdfg(orders_with_primary_log, business_hours=True, business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
+    ocdfg = filter_ocdfg(ocdfg)
+    pm4py.view_ocdfg(ocdfg, performance_aggregation="mean", annotation="performance")
+#
+    # SecondarySalesRep
+    ocdfg = pm4py.discover_ocdfg(orders_with_secondary_log, business_hours=True, business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
+    ocdfg = filter_ocdfg(ocdfg)
+    pm4py.view_ocdfg(ocdfg, performance_aggregation="mean", annotation="performance")
+#
+    # OtherSalesRep
+    ocdfg = pm4py.discover_ocdfg(orders_with_other_log, business_hours=True, business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
     ocdfg = filter_ocdfg(ocdfg)
     pm4py.view_ocdfg(ocdfg, performance_aggregation="mean", annotation="performance")
 
-    ocdfg = pm4py.discover_ocdfg(orders_with_secondary_log, business_hours=True,
-                                 business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
-    ocdfg = filter_ocdfg(ocdfg)
-    pm4py.view_ocdfg(ocdfg, performance_aggregation="mean", annotation="performance")
 
-    ocdfg = pm4py.discover_ocdfg(orders_with_other_log, business_hours=True,
-                                 business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
-    ocdfg = filter_ocdfg(ocdfg)
-    pm4py.view_ocdfg(ocdfg, performance_aggregation="mean", annotation="performance")
+def exercise_3_8_2(ocel):
+    primarySalesReps = {}
+    secondarySalesReps = {}
+
+    # nach One-Face-Policy zugeordnete Mitarbeiter auslesen
+    filtered_log = pm4py.filter_ocel_object_types(ocel, obj_types=['customers', 'employees'])
+
+    for index, o2orel in filtered_log.o2o.iterrows():
+        if o2orel['ocel:qualifier'] == 'primarySalesRep':
+            primarySalesReps[o2orel['ocel:oid']] = o2orel['ocel:oid_2']
+        elif o2orel['ocel:qualifier'] == 'secondarySalesRep':
+            secondarySalesReps[o2orel['ocel:oid']] = o2orel['ocel:oid_2']
+
+    # Bestellungen nach One-Face-Policy kategorisieren
+    filtered_log = pm4py.filter_ocel_event_attribute(ocel, "ocel:activity", ["confirm order"], positive=True)
+    filtered_log = pm4py.filter_ocel_object_types(filtered_log, obj_types=['items', 'products'], positive=False)
+
+    df = filtered_log.relations
+    df.drop(axis=1, inplace=True, columns=['ocel:timestamp', 'ocel:activity'])
+
+    order_df = df[df['ocel:type'] == 'orders']
+    customer_df = df[df['ocel:type'] == 'customers']
+    employee_df = df[df['ocel:type'] == 'employees']
+
+    merged_df = pd.merge(order_df, customer_df, on='ocel:eid', how='outer')
+    merged_df = pd.merge(merged_df, employee_df, on='ocel:eid', how='outer')
+
+    orders_with_primary = []
+    orders_with_secondary = []
+    orders_with_other = []
+
+    for index, row in merged_df.iterrows():
+        if primarySalesReps[row['ocel:oid_y']] == row['ocel:oid']:
+            orders_with_primary.append(row['ocel:oid_x'])
+        elif secondarySalesReps[row['ocel:oid_y']] == row['ocel:oid']:
+            orders_with_secondary.append(row['ocel:oid_x'])
+        else:
+            orders_with_other.append(row['ocel:oid_x'])
+
+    filtered_log = pm4py.filter_ocel_object_types(ocel=ocel, obj_types=['items', 'orders'])
+
+    lists_of_orders = [orders_with_primary, orders_with_secondary, orders_with_other]
+    articles_per_order = []
+    result = []
+
+    # Um Zeilen zu sparen, loopen wir über alle drei Listen
+    for orderlist in lists_of_orders:
+
+        # Über jede Bestellung in der Liste
+        for order in orderlist:
+
+            # speichern die Artikel jeder Bestellung
+            orders_articles = []
+
+            # Vergleichen mit den Objekt-Objekt-Beziehungen um die Artikel zu jeder Bestellung zu finden
+            for index, o2orel in filtered_log.o2o.iterrows():
+
+                # Wenn die Bestellungsnummer größer oder kleiner ist als die aktuell im Scope, kann der nächste
+                # Zyklus begonnen werden, da die Bestellungen sortiert vorliegen
+                if (o2orel['ocel:oid'] > order) or (o2orel['ocel:oid'] < order):
+                    continue
+
+                # Die Bestellung, die aktuell analysiert wird
+                elif o2orel['ocel:oid'] == order:
+
+                    # Artikel aus der Bestellung wird zwischengespeichert
+                    orders_articles.append([o2orel['ocel:oid_2']])
+
+            # Im Zwischenergebnis sämtliche Artikel der Bestellungen der Liste speichern
+            articles_per_order.append(orders_articles)
+
+        article_count = 0
+        for order in articles_per_order:
+            article_count += len(order)
+
+        average_articles_per_order = article_count / len(articles_per_order)
+        result.append(' | durchschnittliche Artikel pro Bestellung : ' + str(average_articles_per_order))
+
+    # [' | durchschnittliche Artikel pro Bestellung : 3.8363740022805017', ' | durchschnittliche Artikel pro Bestellung : 3.835384615384615', ' | durchschnittliche Artikel pro Bestellung : 3.8295'
+    print(result)
 
 
 if __name__ == '__main__':
     log = pm4py.read.read_ocel2_json(OM_PATH)
 
-
     # exercise_3_1(log)
     # exercise_3_2(log)
     # exercise_3_3(log)
     # exercise_3_4(log)
-    exercise_3_5(log)
+    # exercise_3_5(log)
     # exercise_3_6(log)
     # exercise_3_7(log)
-    # exercise_3_8(log)
+    exercise_3_8(log)
+    # exercise_3_8_2(log)
 
     # -----------------------------------------------------------------------------------------
 
