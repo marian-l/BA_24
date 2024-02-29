@@ -27,63 +27,6 @@ TEXT_DATA_PATH = 'data/order_management/text/'
 DATA_PATH = 'data/order_management/'
 
 
-def discover_objects_graph(log: OCEL):
-    obj_interaction = pm4py.discover_objects_graph(log, graph_type="object_interaction")
-    obj_descendants = pm4py.discover_objects_graph(log, graph_type="object_descendants")
-    obj_inheritance = pm4py.discover_objects_graph(log, graph_type="object_inheritance")
-    obj_cobirth = pm4py.discover_objects_graph(log, graph_type="object_cobirth")
-    obj_codeath = pm4py.discover_objects_graph(log, graph_type="object_codeath")
-
-    object_graphs = [
-        obj_interaction,
-        obj_descendants,
-        obj_inheritance,
-        obj_cobirth,
-        obj_codeath
-    ]
-
-    return object_graphs
-
-
-def save_object_interactions(object_graphs: list[set[tuple[str, str]]]):
-    i = 0
-    for object_graph in object_graphs:
-        f = open(DATA_PATH + 'text/object_interactions/' + str(i) + '.txt', 'x')
-        f.write(object_graph.__str__())
-        i += 1
-
-
-def save_object_graph(object_graphs: list[set[tuple[str, str]]]):
-    # Problem: Für alle Graphen außer Object-Codeath ergibt sich ein einziger, großer Eintrag, der nicht in weitere
-    # Subgraphen unterteilt wird.
-    for graph_type in object_graphs:
-        graph = nx.Graph(incoming_graph_data=graph_type)  # undirected Graph
-        # graph has a list of nodes type NodeView
-
-        connected_components_result = connected_components(graph)
-        largest_cc = max(nx.connected_components(graph), key=len)
-        list_of_cc = [len(c) for c in sorted(nx.connected_components(graph), key=len, reverse=True)]
-
-        di_graph = nx.DiGraph(incoming_graph_data=graph_type)  # directed Graph
-        multi_graph = nx.MultiGraph(incoming_graph_data=graph_type, multigraph_input=True)  # undirected Multigraph
-        di_multi_graph = nx.MultiDiGraph(incoming_graph_data=graph_type, multigraph_input=True)  # Directed MultiGraph.
-
-        # https://stackoverflow.com/questions/47892944/python-networkx-find-a-subgraph-in-a-directed-graph-from-a-node-as-root
-        something = (graph.subgraph(c) for c in connected_components(graph))
-
-        # https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.components.connected_components.html
-        subgraph_enumeration = [graph.subgraph(c).copy() for c in connected_components(graph)]
-
-        for i, subgraph in enumerate(subgraph_enumeration):
-            nx.write_gexf(graph, DATA_PATH + graph_type + '.gexf')
-            nx.write_graphml(graph, DATA_PATH + graph_type + '.graphml')
-            plt.figure()
-            nx.draw(subgraph, with_labels=True)
-            plt.savefig(DATA_PATH + nameof(
-                graph_type) + '_' + i + '.png')  # https://stackoverflow.com/questions/1534504/convert-variable-name-to-string
-            plt.close()
-
-
 def show_library_versions():
     pd.DataFrame(
         [
@@ -190,91 +133,6 @@ def get_variety_of_ocdfg(ocdfg):
                                      file_path=GRAPH_DATA_PATH + '/OCPN/' + petri_net + ' ' + name + '.jpeg')
 
 
-def exercise_323(log):
-    df = log.objects
-    filtered_df = df[df['role'].notnull()]
-    filtered_df.drop(axis=1, inplace=True, columns=['price', 'weight'])
-
-    sales_df = filtered_df[filtered_df['role'] == 'Sales']
-    warehouse_df = filtered_df[filtered_df['role'] == 'Warehousing']
-    shipment_df = filtered_df[filtered_df['role'] == 'Shipment']
-
-    sales_persons: Collection[str] = sales_df['ocel:oid'].astype(str).tolist()
-    warehouse_persons: Collection[str] = warehouse_df['ocel:oid'].astype(str).tolist()
-    shipment_persons: Collection[str] = shipment_df['ocel:oid'].astype(str).tolist()
-
-    sales_log = pm4py.filter_ocel_objects(ocel=log, object_identifiers=sales_persons, positive=True, level=1)
-    # Object-Centric Event Log (number of events: 2000, number of objects: 5, number of activities: 1, number of object types: 1, events-objects relationships: 2000)
-    # Activities occurrences: {'confirm order': 2000}
-    # Object types occurrences (number of objects): {'employees': 5}
-
-    # sales_log = pm4py.filter_ocel_objects(ocel=log, object_identifiers=sales_persons, positive=True, level=2)
-    # Object-Centric Event Log (number of events: 21008, number of objects: 9699, number of activities: 11, number of object types: 5, events-objects relationships: 128198)
-    # Activities occurrences: {'pick item': 7659, 'place order': 2000, 'confirm order': 2000, 'pay order': 2000, 'item out of stock': 1544, 'reorder item': 1544, 'create package': 1128, 'send package': 1128, 'package delivered': 1128, 'payment reminder': 566, 'failed delivery': 311}
-    # Object types occurrences (number of objects): {'items': 7659, 'orders': 2000, 'products': 20, 'customers': 15, 'employees': 5}
-
-    # sales_log = pm4py.filter_ocel_objects(ocel=log, object_identifiers=sales_persons, positive=True, level=3)
-    # Object-Centric Event Log (number of events: 21008, number of objects: 10840, number of activities: 11, number of object types: 6, events-objects relationships: 147385)
-    # Activities occurrences: {'pick item': 7659, 'place order': 2000, 'confirm order': 2000, 'pay order': 2000, 'item out of stock': 1544, 'reorder item': 1544, 'create package': 1128, 'send package': 1128, 'package delivered': 1128, 'payment reminder': 566, 'failed delivery': 311}
-    # Object types occurrences (number of objects): {'items': 7659, 'orders': 2000, 'packages': 1128, 'products': 20, 'employees': 18, 'customers': 15}
-
-    warehouse_log = pm4py.filter_ocel_objects(log, object_identifiers=warehouse_persons, positive=True)
-    shipment_log = pm4py.filter_ocel_objects(log, object_identifiers=shipment_persons, positive=True)
-
-    pm4py.view_ocpn(ocpn=pm4py.discover_oc_petri_net(sales_log))
-    pm4py.view_ocpn(ocpn=pm4py.discover_oc_petri_net(warehouse_log))
-    pm4py.view_ocpn(ocpn=pm4py.discover_oc_petri_net(shipment_log))
-    # pm4py.view_ocdfg(ocdfg=pm4py.discover_ocdfg(sales_log), annotation="performance", performance_aggregation="mean")
-    pm4py.view_ocdfg(ocdfg=pm4py.discover_ocdfg(sales_log))
-    pm4py.view_ocdfg(pm4py.discover_ocdfg(warehouse_log))
-    pm4py.view_ocdfg(pm4py.discover_ocdfg(shipment_log))
-
-
-def get_deviations_from_aufgabenteilung(ocel):
-    send_package_ocel = pm4py.filter_ocel_event_attribute(ocel, "ocel:activity", ["send package"], positive=True)
-    send_package_ocel = pm4py.filter_ocel_object_types(send_package_ocel, ['employees'])
-
-    df = send_package_ocel.relations
-    shipper_df = df[df['ocel:qualifier'] == 'shipper']
-    forwarder_df = df[df['ocel:qualifier'] == 'forwarder']
-
-    shipper_df = shipper_df.drop(['ocel:timestamp', 'ocel:type', 'ocel:activity'], axis=1)
-    forwarder_df = forwarder_df.drop(['ocel:timestamp', 'ocel:type', 'ocel:activity'], axis=1)
-
-    merged_df = pd.merge(shipper_df, forwarder_df, on='ocel:eid', how='outer')
-
-    only_shipper_list = []
-    both_entries_list = []
-
-    # categorize the entries
-    for index, row in merged_df.iterrows():
-        if (row['ocel:oid_x'] is pd.NA) or (row['ocel:oid_y'] is pd.NA):
-            only_shipper_list.append(row)
-        else:
-            both_entries_list.append(row)
-
-    shippers_helping_shippers = []
-    warehousers_helping_shippers = []
-
-    # extract the shippers and the warehousers
-    shipper_persons = set(shipper_df['ocel:oid'].astype(str).tolist())
-
-    # categorize the entries
-    for row in both_entries_list:
-        if row['ocel:oid_y'] in shipper_persons:
-            shippers_helping_shippers.append(row)
-        else:
-            warehousers_helping_shippers.append(row)
-
-    print(len(only_shipper_list) + len(both_entries_list))
-    print('len(only_shipper_list):' + str(len(only_shipper_list)))
-    print('len(both_entries_list):' + str(len(both_entries_list)))
-
-    print(len(shippers_helping_shippers) + len(warehousers_helping_shippers))
-    print('len(warehousers_helping_shippers):' + str(len(warehousers_helping_shippers)))
-    print('len(shippers_helping_shippers):' + str(len(shippers_helping_shippers)))
-
-
 def get_object_lifecycle_and_relations(log):
     objects = ['items', 'orders', 'packages', 'products', 'employees', 'customers']
 
@@ -309,10 +167,7 @@ def get_object_lifecycle_and_relations(log):
     package_df = log.o2o[log.o2o['ocel:qualifier'] == 'contains']
     item_df = log.o2o[log.o2o['ocel:qualifier'] == 'is a']
 
-
     result = []
-
-
 
     # all_dfs = [order_df, customer_df, package_df, item_df]
 
@@ -373,14 +228,14 @@ def get_object_lifecycle_and_relations(log):
     plt.xlabel("Artikel")
     plt.title('Werteverteilung der Artikel in Bestellungen')
     plt.show()
-#
+    #
     # customer_df
     values = [item[1] for item in result[1]]
     plt.hist(values, bins=20)
     plt.xlabel("Artikel")
     plt.title('Werteverteilung der Bestellungen pro Kunde')
     plt.show()
-#
+    #
     # package_df
     values = [item[1] for item in result[2]]
     plt.hist(values, bins=20)
@@ -391,16 +246,27 @@ def get_object_lifecycle_and_relations(log):
     print("")
 
 
-if __name__ == '__main__':
-    log = pm4py.read.read_ocel2_json(OM_PATH)
+# UTILS
+def save_to_file(data, filepath: string, name: string):
+    f = open(filepath + name + '.txt', 'x')
+    if type(data) == string:
+        f.write(data)
+    elif type(data) == pd.DataFrame:
+        data.to_csv(filepath + name + '.txt', sep='\t', index=False)
+    f.close()
 
-    # temporal_summary = pm4py.ocel.ocel_temporal_summary(log)
 
-    # log = pm4py.ocel.ocel_add_index_based_timedelta(log)
-    # log = pm4py.ocel.ocel_drop_duplicates(log)
+def save_temporal_summary(log):
+    # done
+    temporal_summary_dataframe = pm4py.ocel.ocel_temporal_summary(log)
+    with pd.option_context('display.max_rows', None,
+                           'display.max_columns', None,
+                           'display.precision', 3,
+                           ):
+        save_to_file(temporal_summary_dataframe, TEXT_DATA_PATH, 'temporal_summary')
 
-    ocdfg = pm4py.discover_ocdfg(log, business_hours=True, business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
 
+def filter_ocdfg(ocdfg):
     for key, dictionary in ocdfg['edges_performance']['event_couples'].items():
         for inner_key, object_list in dictionary.items():
             dictionary[inner_key] = list(filter(lambda ol: ol != 0.0, object_list))
@@ -408,10 +274,319 @@ if __name__ == '__main__':
                 # dictionary[inner_key] has to be iterable for "add_performance_edge" in classic.py
                 dictionary[inner_key] = [0.0]
 
+    return ocdfg
+
+
+def exercise_3_1(ocel):
+    # Pre-Processing
+
+    # Ist das Log valides OCEL?
+    validate_log()
+
+    # liegt das Log im OCEL2.0 Format vor?
+    print(ocel.is_ocel20())
+
+    save_temporal_summary(ocel)
+
+    # Conformance Checking
+    ocpn = pm4py.discover_oc_petri_net(ocel, diagnostics_with_tbr=True)
+    print(get_soundness(ocpn=ocpn))
+    pm4py.view_ocpn(ocpn=ocpn, rankdir='TB')
+
+    ocdfg = pm4py.discover_ocdfg(ocel)
+
+    # Performance Checking
+    ocel = pm4py.filter_ocel_object_types(ocel, ["products"], positive=False)
+
+    ocdfg = pm4py.discover_ocdfg(ocel, business_hours=True, business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
+    pm4py.view_ocdfg(ocdfg, annotation="frequency", edge_threshold=200)
+
+    ocdfg = filter_ocdfg(ocdfg)
+
     pm4py.view_ocdfg(ocdfg, performance_aggregation="min", annotation="performance")
     pm4py.view_ocdfg(ocdfg, performance_aggregation="max", annotation="performance")
     pm4py.view_ocdfg(ocdfg, performance_aggregation="mean", annotation="performance")
     pm4py.view_ocdfg(ocdfg, performance_aggregation="median", annotation="performance")
 
+
+def exercise_3_2(ocel):
+    import json
+    import pm4py
+    from tabulate import tabulate
+
+    FILE_PATH = 'data/order_management/311-2-log.jsonocel'
+
+    place_confirm_order_log = pm4py.filter_ocel_event_attribute(ocel, "ocel:activity", ["confirm order"], positive=True)
+    place_confirm_order_log = pm4py.filter_ocel_object_attribute(place_confirm_order_log, "ocel:type",
+                                                                 ["item", "product", "order"], positive=False)
+    pm4py.write.write_ocel2(place_confirm_order_log, FILE_PATH)
+
+    number_of_lines = 234279
+    output_file_path = 'data/order_management/311-22-log.json'
+
+    with open(FILE_PATH, 'r') as input_file, open(output_file_path, 'w') as output_file:
+        for i, line in enumerate(input_file):
+            if i > number_of_lines:
+                output_file.write(line)
+            else:
+                continue
+
+    employees = ['Istvan Koren', 'Mara Nitschke', 'Jan Niklas Adams', 'Christine von Dobbert', 'Wil van der Aalst']
+    customers = ['Danube Pharmaceuticals BV', 'Carpathian Financial Services plc', 'AlpenTech Innovations AG',
+                 'Balkan Minerals d.o.o.', 'Riviera Robotics SAS', 'Iberian Sun Solaridades SA',
+                 'Baltic Wave Energies Ltd.', 'Pantheon Art Gallery Kft.', 'Vesta Fashion House GmbH',
+                 'Medi-terranea Luxury Cruises S.p.A.', 'Nordica Systems GmbH', 'Celtica Green Farms Oy',
+                 'Golden Fleece Textiles S.A.R.L.', 'SwissPeak Timepieces AG', 'Eastern Oak Insurance Zrt.', ]
+
+    with open(FILE_PATH, 'r') as file:
+        event_log_data = json.load(file)
+
+    table = [['CUSTOMER', 'SALES PERSON', 'APPEARANCES']]
+
+    for customer in customers:
+        for employee in employees:
+            specific_customer = customer
+            specific_sales_person = employee
+            combination_count = 0
+            for event in event_log_data["events"]:
+                customer_present = any(rel['objectId'] == specific_customer for rel in event['relationships'])
+                sales_person_present = any(
+                    rel['objectId'] == specific_sales_person for rel in event['relationships'])
+                if customer_present and sales_person_present:
+                    combination_count += 1
+
+            if combination_count > 0:
+                table.append([specific_customer, specific_sales_person, combination_count])
+
+    print(tabulate(table, headers='firstrow', tablefmt='fancy_grid'))
+
+
+def exercise_3_3(ocel):
+    # Conformance Checking
+    df = log.objects
+    filtered_df = df[df['role'].notnull()]
+    filtered_df.drop(axis=1, inplace=True, columns=['price', 'weight'])
+
+    sales_df = filtered_df[filtered_df['role'] == 'Sales']
+    warehouse_df = filtered_df[filtered_df['role'] == 'Warehousing']
+    shipment_df = filtered_df[filtered_df['role'] == 'Shipment']
+
+    sales_persons: Collection[str] = sales_df['ocel:oid'].astype(str).tolist()
+    warehouse_persons: Collection[str] = warehouse_df['ocel:oid'].astype(str).tolist()
+    shipment_persons: Collection[str] = shipment_df['ocel:oid'].astype(str).tolist()
+
+    sales_log = pm4py.filter_ocel_objects(ocel=log, object_identifiers=sales_persons, positive=True)
+    warehouse_log = pm4py.filter_ocel_objects(ocel=log, object_identifiers=warehouse_persons, positive=True)
+    shipment_log = pm4py.filter_ocel_objects(ocel=log, object_identifiers=shipment_persons, positive=True)
+
+    ocpn = pm4py.discover_oc_petri_net(sales_log)
+    print(get_soundness(ocpn=ocpn))
+    pm4py.view_ocpn(ocpn=ocpn)
+
+    ocpn = pm4py.discover_oc_petri_net(warehouse_log)
+    print(get_soundness(ocpn=ocpn))
+    pm4py.view_ocpn(ocpn=ocpn)
+
+    ocpn = pm4py.discover_oc_petri_net(shipment_log)
+    print(get_soundness(ocpn=ocpn))
+    pm4py.view_ocpn(ocpn=ocpn)
+
+    pm4py.view_ocdfg(ocdfg=pm4py.discover_ocdfg(sales_log))
+    pm4py.view_ocdfg(ocdfg=pm4py.discover_ocdfg(warehouse_log))
+    pm4py.view_ocdfg(ocdfg=pm4py.discover_ocdfg(shipment_log))
+
+
+def exercise_3_4(ocel):
+    filtered_ocel = pm4py.filter_ocel_event_attribute(ocel=ocel, attribute_key='ocel:activity', attribute_values=['pay order', 'payment reminder'])
+    print(filtered_ocel)
+    print(filtered_ocel.o2o)
+
+    samples_o2o_df = filtered_ocel.o2o.sample(n=100)
+    print(samples_o2o_df)
+
+    for index, row in samples_o2o_df.iterrows():
+        if (row['ocel:qualifier'] != 'comprises') and (row['ocel:qualifier'] != 'is a'):
+            print(row)
+
+
+def exercise_3_5(ocel):
+    send_package_ocel = pm4py.filter_ocel_event_attribute(ocel=ocel, attribute_key="ocel:activity",
+                                                          attribute_values=["send package"], positive=True)
+    send_package_ocel = pm4py.filter_ocel_object_types(ocel=send_package_ocel, obj_types=['employees'])
+
+    df = send_package_ocel.relations
+    shipper_df = df[df['ocel:qualifier'] == 'shipper']
+    forwarder_df = df[df['ocel:qualifier'] == 'forwarder']
+
+    shipper_df = shipper_df.drop(['ocel:timestamp', 'ocel:type', 'ocel:activity'], axis=1)
+    forwarder_df = forwarder_df.drop(['ocel:timestamp', 'ocel:type', 'ocel:activity'], axis=1)
+
+    merged_df = pd.merge(shipper_df, forwarder_df, on='ocel:eid', how='outer')
+
+    only_shipper_list = []
+    both_entries_list = []
+
+    # categorize the entries
+    for index, row in merged_df.iterrows():
+        if (row['ocel:oid_x'] is pd.NA) or (row['ocel:oid_y'] is pd.NA):
+            only_shipper_list.append(row)
+        else:
+            both_entries_list.append(row)
+
+    shippers_helping_shippers_list = []
+    warehousers_helping_shippers_list = []
+
+    # extract the shippers and the warehousers
+    shipper_persons = set(shipper_df['ocel:oid'].astype(str).tolist())
+
+    # categorize the entries
+    for row in both_entries_list:
+        if row['ocel:oid_y'] in shipper_persons:
+            shippers_helping_shippers_list.append(row)
+        else:
+            warehousers_helping_shippers_list.append(row)
+
+    print(len(only_shipper_list) + len(both_entries_list))
+    print('len(only_shipper_list):' + str(len(only_shipper_list)))
+    print('len(both_entries_list):' + str(len(both_entries_list)))
+
+    print(len(shippers_helping_shippers_list) + len(warehousers_helping_shippers_list))
+    print('len(warehousers_helping_shippers):' + str(len(warehousers_helping_shippers_list)))
+    print('len(shippers_helping_shippers_list):' + str(len(shippers_helping_shippers_list)))
+
+    # PERFORMANCE CHECKING
+    # Die EventIDs enthalten die ID des jeweiligen Pakets, zum Beispiel send_p-661128, sodass wir diese nur als Substring herausfiltern müssen
+    send_package_ocel = pm4py.filter_ocel_event_attribute(ocel=ocel, attribute_key="ocel:activity", attribute_values=["send package", "package delivered", "failed delivery"], positive=True)
+
+    # Liste Packages mit den Paket-Objekten der jeweiligen Kategorie füllen und ein gefiltertes Log erstellen
+    packages = []
+    for series in only_shipper_list:
+        packages.append(series['ocel:eid'].replace('send_', ''))
+    only_shipper_log = pm4py.filter_ocel_objects(ocel=send_package_ocel, object_identifiers=packages)
+
+    packages = []
+    for series in shippers_helping_shippers_list:
+        packages.append(series['ocel:eid'].replace('send_', ''))
+    shippers_helping_shippers_log = pm4py.filter_ocel_objects(ocel=send_package_ocel, object_identifiers=packages)
+
+    packages = []
+    for series in warehousers_helping_shippers_list:
+        packages.append(series['ocel:eid'].replace('send_', ''))
+    warehousers_helping_shippers_log = pm4py.filter_ocel_objects(ocel=send_package_ocel, object_identifiers=packages)
+
+    # Zur Absicherung OCPNs mit Diagnostiken herstellen, da gefiltert wurde
+    # ocpn = pm4py.discover_oc_petri_net(only_shipper_log, diagnostics_with_tbr=True)
+    # print(get_soundness(ocpn=ocpn))
+    # pm4py.view_ocpn(ocpn=ocpn)
+#
+    # ocpn = pm4py.discover_oc_petri_net(shippers_helping_shippers_log, diagnostics_with_tbr=True)
+    # print(get_soundness(ocpn=ocpn))
+    # pm4py.view_ocpn(ocpn=ocpn)
+#
+    # ocpn = pm4py.discover_oc_petri_net(warehousers_helping_shippers_log, diagnostics_with_tbr=True)
+    # print(get_soundness(ocpn=ocpn))
+    # pm4py.view_ocpn(ocpn=ocpn)
+
+    ocdfg = filter_ocdfg(pm4py.discover_ocdfg(only_shipper_log))
+    pm4py.view_ocdfg(ocdfg=ocdfg, annotation='performance', performance_aggregation='mean')
+    pm4py.view_ocdfg(ocdfg=ocdfg, annotation='performance', performance_aggregation='median')
+
+    ocdfg = filter_ocdfg(pm4py.discover_ocdfg(shippers_helping_shippers_log))
+    pm4py.view_ocdfg(ocdfg=ocdfg, annotation='performance', performance_aggregation='mean')
+    pm4py.view_ocdfg(ocdfg=ocdfg, annotation='performance', performance_aggregation='median')
+
+    ocdfg = filter_ocdfg(pm4py.discover_ocdfg(warehousers_helping_shippers_log))
+    pm4py.view_ocdfg(ocdfg=ocdfg, annotation='performance', performance_aggregation='mean')
+    pm4py.view_ocdfg(ocdfg=ocdfg, annotation='performance', performance_aggregation='median')
+
+    print("")
+
+def exercise_3_6(ocel):
+    pass
+
+
+def exercise_3_7(ocel):
+    pass
+
+
+def exercise_3_8(ocel):
+    primarySalesReps = {}
+    secondarySalesReps = {}
+
+    # nach One-Face-Policy zugeordnete Mitarbeiter auslesen
+    filtered_log = pm4py.filter_ocel_object_types(ocel, obj_types=['customers', 'employees'])
+
+    for index, o2orel in filtered_log.o2o.iterrows():
+        if o2orel['ocel:qualifier'] == 'primarySalesRep':
+            primarySalesReps[o2orel['ocel:oid']] = o2orel['ocel:oid_2']
+        elif o2orel['ocel:qualifier'] == 'secondarySalesRep':
+            secondarySalesReps[o2orel['ocel:oid']] = o2orel['ocel:oid_2']
+
+    # Bestellungen nach One-Face-Policy kategorisieren
+    filtered_log = pm4py.filter_ocel_event_attribute(ocel, "ocel:activity", ["confirm order"], positive=True)
+    filtered_log = pm4py.filter_ocel_object_types(filtered_log, obj_types=['items', 'products'], positive=False)
+
+    df = filtered_log.relations
+    df.drop(axis=1, inplace=True, columns=['ocel:timestamp', 'ocel:activity'])
+
+    order_df = df[df['ocel:type'] == 'orders']
+    customer_df = df[df['ocel:type'] == 'customers']
+    employee_df = df[df['ocel:type'] == 'employees']
+
+    merged_df = pd.merge(order_df, customer_df, on='ocel:eid', how='outer')
+    merged_df = pd.merge(merged_df, employee_df, on='ocel:eid', how='outer')
+
+    orders_with_primary = []
+    orders_with_secondary = []
+    orders_with_other = []
+
+    for index, row in merged_df.iterrows():
+        if primarySalesReps[row['ocel:oid_y']] == row['ocel:oid']:
+            orders_with_primary.append(row['ocel:oid_x'])
+        elif secondarySalesReps[row['ocel:oid_y']] == row['ocel:oid']:
+            orders_with_secondary.append(row['ocel:oid_x'])
+        else:
+            orders_with_other.append(row['ocel:oid_x'])
+
+    orders_with_primary_log = pm4py.filter_ocel_objects(ocel, orders_with_primary)
+    orders_with_secondary_log = pm4py.filter_ocel_objects(ocel, orders_with_secondary)
+    orders_with_other_log = pm4py.filter_ocel_objects(ocel, orders_with_other)
+
+    # OCELs auswerten
+    ocdfg = pm4py.discover_ocdfg(orders_with_primary_log, business_hours=True,
+                                 business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
+
+    # den Durchschnitt verfälschende 0.0 Werte herausfiltern
+    ocdfg = filter_ocdfg(ocdfg)
+    pm4py.view_ocdfg(ocdfg, performance_aggregation="mean", annotation="performance")
+
+    ocdfg = pm4py.discover_ocdfg(orders_with_secondary_log, business_hours=True,
+                                 business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
+    ocdfg = filter_ocdfg(ocdfg)
+    pm4py.view_ocdfg(ocdfg, performance_aggregation="mean", annotation="performance")
+
+    ocdfg = pm4py.discover_ocdfg(orders_with_other_log, business_hours=True,
+                                 business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
+    ocdfg = filter_ocdfg(ocdfg)
+    pm4py.view_ocdfg(ocdfg, performance_aggregation="mean", annotation="performance")
+
+
+if __name__ == '__main__':
+    log = pm4py.read.read_ocel2_json(OM_PATH)
+
+
+    # exercise_3_1(log)
+    # exercise_3_2(log)
+    # exercise_3_3(log)
+    # exercise_3_4(log)
+    exercise_3_5(log)
+    # exercise_3_6(log)
+    # exercise_3_7(log)
+    # exercise_3_8(log)
+
+    # -----------------------------------------------------------------------------------------
+
     print("--------------------------------------------------------")
 
+# 20s + 14m (create package) + ((0ns + 1m) || (25s)) + ((22m + 2m) || 1min) = 39min 20s || 15min 45s
+# 20s + 1D + 24m
