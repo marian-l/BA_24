@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="order-management" uuid="4132b2cf-6596-4e55-8b00-4ccebcbfc960">
+    <data-source source="LOCAL" name="order-management [2]" uuid="5bb38cfb-f29e-4806-ad34-201957c2d7f8">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:C:\Users\maria\Dokumente\codes\Python\BA_24\order-management.sqlite</jdbc-url>
+      <jdbc-url>jdbc:sqlite:C:\Users\maria\Dokumente\codes\Python\BA_24\data\order_management\order-management.sqlite</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
+      <libraries>
+        <library>
+          <url>file://$APPLICATION_CONFIG_DIR$/jdbc-drivers/Xerial SQLiteJDBC/3.43.0/org/xerial/sqlite-jdbc/3.43.0.0/sqlite-jdbc-3.43.0.0.jar</url>
+        </library>
+      </libraries>
     </data-source>
   </component>
 </project>
