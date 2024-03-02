@@ -117,113 +117,6 @@ def get_variety_of_ocdfg(ocdfg):
                                      file_path=GRAPH_DATA_PATH + '/OCPN/' + petri_net + ' ' + name + '.jpeg')
 
 
-def get_object_lifecycle_and_relations(log):
-    objects = ['items', 'orders', 'packages', 'products', 'employees', 'customers']
-
-    print('Nach Objekt gefilterte OCELs: ')
-    for ocel_object in objects:
-       print(ocel_object)
-       print(pm4py.filter_ocel_object_types(ocel=log, obj_types=[ocel_object], positive=True, level=1))
-       print('\n')
-    #
-    print('Nach Startaktivität gefilterte OCELs: ')
-    for ocel_object in objects:
-       print(ocel_object)
-       print(pm4py.filtering.filter_ocel_start_events_per_object_type(log, ocel_object))
-       print('\n')
-    #
-    print('Nach Endaktivität gefilterte OCELs: ')
-    for ocel_object in objects:
-       print(ocel_object)
-       print(pm4py.filtering.filter_ocel_end_events_per_object_type(log, ocel_object))
-       print('\n')
-
-    print(log.o2o['ocel:qualifier'].unique())
-
-    relations = ['comprises' 'is a' 'forwarded by' 'packed by' 'shipped by' 'contains'
-           'primarySalesRep' 'secondarySalesRep' 'places']
-
-    order_df = log.o2o[log.o2o['ocel:qualifier'] == 'comprises']
-    customer_df = log.o2o[log.o2o['ocel:qualifier'] == 'places']
-    package_df = log.o2o[log.o2o['ocel:qualifier'] == 'contains']
-    item_df = log.o2o[log.o2o['ocel:qualifier'] == 'is a']
-
-    result = []
-
-    all_dfs = [order_df, customer_df, package_df
-               ]
-    for df in all_dfs:
-        current = ''
-        tempresult = []
-        count = 0
-
-        for row in df.iterrows():
-            if current == '':
-                current = row[1]['ocel:oid']
-            if row[1]['ocel:oid'] == current:
-                count += 1
-            else:
-                tempresult.append([current, count])
-                count = 1
-                current = row[1]['ocel:oid']
-
-        if current != '' and count > 0:
-            tempresult.append([current, count])
-
-        tempresult.sort(key=lambda x: x[1], reverse=True)
-        result.append(tempresult)
-
-    # order_df
-    values = [item[1] for item in result[0]]
-    mean = sum(values, 0) / len(values)
-    max_articles_in_order = max(values)
-    min_articles_in_order = min(values)
-    print('mean: ' + str(mean))
-    print('min: ' + str(min_articles_in_order))
-    print('max: ' + str(max_articles_in_order))
-
-    # customer_df
-    values = [item[1] for item in result[1]]
-    mean = sum(values, 0) / len(values)
-    max_orders_in_customer = max(values)
-    min_orders_in_customer = min(values)
-    print('mean: ' + str(mean))
-    print('max: ' + str(max_orders_in_customer))
-    print('min: ' + str(min_orders_in_customer))
-
-    # package_df
-    values = [item[1] for item in result[2]]
-    mean = sum(values, 0) / len(values)
-    max_article_in_packages = max(values)
-    min_article_in_packages = min(values)
-    print('mean: ' + str(mean))
-    print('max: ' + str(max_article_in_packages))
-    print('min: ' + str(min_article_in_packages))
-
-    # order_df
-    values = [item[1] for item in result[0]]
-    plt.hist(values, bins=20)
-    plt.ylabel("Anzahl")
-    plt.xlabel("Artikel")
-    plt.title('Werteverteilung der Artikel in Bestellungen')
-    plt.show()
-    #
-    # customer_df
-    values = [item[1] for item in result[1]]
-    plt.hist(values, bins=20)
-    plt.xlabel("Artikel")
-    plt.title('Werteverteilung der Bestellungen pro Kunde')
-    plt.show()
-    #
-    # package_df
-    values = [item[1] for item in result[2]]
-    plt.hist(values, bins=20)
-    plt.xlabel("Artikel")
-    plt.title('Werteverteilung der Artikel in Paketen')
-    plt.show()
-
-    print("")
-
 
 # UTILS
 def save_to_file(data, filepath: string, name: string):
@@ -481,7 +374,109 @@ def exercise_3_5(ocel):
     print("")
 
 def exercise_3_6(ocel):
-    pass
+    objects = ['items', 'orders', 'packages', 'products', 'employees', 'customers']
+
+    print('Nach Objekt gefilterte OCELs: ')
+    for ocel_object in objects:
+        print(ocel_object)
+        print(pm4py.filter_ocel_object_types(ocel=ocel, obj_types=[ocel_object], positive=True, level=1))
+        print('\n')
+    #
+    print('Nach Startaktivität gefilterte OCELs: ')
+    for ocel_object in objects:
+        print(ocel_object)
+        print(pm4py.filtering.filter_ocel_start_events_per_object_type(ocel, ocel_object))
+        print('\n')
+    #
+    print('Nach Endaktivität gefilterte OCELs: ')
+    for ocel_object in objects:
+        print(ocel_object)
+        print(pm4py.filtering.filter_ocel_end_events_per_object_type(ocel, ocel_object))
+        print('\n')
+
+    print(ocel.o2o['ocel:qualifier'].unique())
+
+    relations = ['comprises' 'is a' 'forwarded by' 'packed by' 'shipped by' 'contains'
+                 'primarySalesRep' 'secondarySalesRep' 'places']
+
+    order_df = ocel.o2o[ocel.o2o['ocel:qualifier'] == 'comprises']
+    customer_df = ocel.o2o[ocel.o2o['ocel:qualifier'] == 'places']
+    package_df = ocel.o2o[ocel.o2o['ocel:qualifier'] == 'contains']
+    item_df = ocel.o2o[ocel.o2o['ocel:qualifier'] == 'is a']
+
+    result = []
+
+    all_dfs = [order_df, customer_df, package_df
+               ]
+    for df in all_dfs:
+        current = ''
+        tempresult = []
+        count = 0
+
+        for row in df.iterrows():
+            if current == '':
+                current = row[1]['ocel:oid']
+            if row[1]['ocel:oid'] == current:
+                count += 1
+            else:
+                tempresult.append([current, count])
+                count = 1
+                current = row[1]['ocel:oid']
+
+        if current != '' and count > 0:
+            tempresult.append([current, count])
+
+        tempresult.sort(key=lambda x: x[1], reverse=True)
+        result.append(tempresult)
+
+    # order_df
+    values = [item[1] for item in result[0]]
+    mean = sum(values, 0) / len(values)
+    max_articles_in_order = max(values)
+    min_articles_in_order = min(values)
+    print('mean: ' + str(mean))
+    print('min: ' + str(min_articles_in_order))
+    print('max: ' + str(max_articles_in_order))
+
+    # customer_df
+    values = [item[1] for item in result[1]]
+    mean = sum(values, 0) / len(values)
+    max_orders_in_customer = max(values)
+    min_orders_in_customer = min(values)
+    print('mean: ' + str(mean))
+    print('max: ' + str(max_orders_in_customer))
+    print('min: ' + str(min_orders_in_customer))
+
+    # package_df
+    values = [item[1] for item in result[2]]
+    mean = sum(values, 0) / len(values)
+    max_article_in_packages = max(values)
+    min_article_in_packages = min(values)
+    print('mean: ' + str(mean))
+    print('max: ' + str(max_article_in_packages))
+    print('min: ' + str(min_article_in_packages))
+
+    # order_df
+    values = [item[1] for item in result[0]]
+    plt.hist(values, bins=20)
+    plt.ylabel("Anzahl")
+    plt.xlabel("Artikel")
+    plt.title('Werteverteilung der Artikel in Bestellungen')
+    plt.show()
+    #
+    # customer_df
+    values = [item[1] for item in result[1]]
+    plt.hist(values, bins=20)
+    plt.xlabel("Artikel")
+    plt.title('Werteverteilung der Bestellungen pro Kunde')
+    plt.show()
+    #
+    # package_df
+    values = [item[1] for item in result[2]]
+    plt.hist(values, bins=20)
+    plt.xlabel("Artikel")
+    plt.title('Werteverteilung der Artikel in Paketen')
+    plt.show()
 
 
 def exercise_3_7(ocel):
@@ -634,14 +629,14 @@ def exercise_3_8_2(ocel):
 if __name__ == '__main__':
     log = pm4py.read.read_ocel2_json(OM_PATH)
 
-    # exercise_3_1(log)
+    exercise_3_1(log)
     # exercise_3_2(log)
     # exercise_3_3(log)
     # exercise_3_4(log)
     # exercise_3_5(log)
     # exercise_3_6(log)
     # exercise_3_7(log)
-    exercise_3_8(log)
+    # exercise_3_8(log)
     # exercise_3_8_2(log)
 
     # -----------------------------------------------------------------------------------------
