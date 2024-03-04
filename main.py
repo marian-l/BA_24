@@ -117,7 +117,6 @@ def get_variety_of_ocdfg(ocdfg):
                                      file_path=GRAPH_DATA_PATH + '/OCPN/' + petri_net + ' ' + name + '.jpeg')
 
 
-
 # UTILS
 def save_to_file(data, filepath: string, name: string):
     f = open(filepath + name + '.txt', 'x')
@@ -157,7 +156,6 @@ def exercise_3_1(ocel):
 
     # liegt das Log im OCEL2.0 Format vor?
     print(ocel.is_ocel20())
-
     save_temporal_summary(ocel)
 
     # Conformance Checking
@@ -166,6 +164,7 @@ def exercise_3_1(ocel):
     pm4py.view_ocpn(ocpn=ocpn, rankdir='TB')
 
     ocdfg = pm4py.discover_ocdfg(ocel)
+    pm4py.view_ocdfg(ocdfg, annotation="frequency")
 
     # Performance Checking
     ocel = pm4py.filter_ocel_object_types(ocel, ["products"], positive=False)
@@ -269,7 +268,8 @@ def exercise_3_3(ocel):
 
 
 def exercise_3_4(ocel):
-    filtered_ocel = pm4py.filter_ocel_event_attribute(ocel=ocel, attribute_key='ocel:activity', attribute_values=['pay order', 'payment reminder'])
+    filtered_ocel = pm4py.filter_ocel_event_attribute(ocel=ocel, attribute_key='ocel:activity',
+                                                      attribute_values=['pay order', 'payment reminder'])
     print(filtered_ocel)
     print(filtered_ocel.o2o)
 
@@ -328,7 +328,9 @@ def exercise_3_5(ocel):
 
     # PERFORMANCE CHECKING
     # Die EventIDs enthalten die ID des jeweiligen Pakets, zum Beispiel send_p-661128, sodass wir diese nur als Substring herausfiltern müssen
-    send_package_ocel = pm4py.filter_ocel_event_attribute(ocel=ocel, attribute_key="ocel:activity", attribute_values=["send package", "package delivered", "failed delivery"], positive=True)
+    send_package_ocel = pm4py.filter_ocel_event_attribute(ocel=ocel, attribute_key="ocel:activity",
+                                                          attribute_values=["send package", "package delivered",
+                                                                            "failed delivery"], positive=True)
 
     # Liste Packages mit den Paket-Objekten der jeweiligen Kategorie füllen und ein gefiltertes Log erstellen
     packages = []
@@ -372,6 +374,7 @@ def exercise_3_5(ocel):
     pm4py.view_ocdfg(ocdfg=ocdfg, annotation='performance', performance_aggregation='median')
 
     print("")
+
 
 def exercise_3_6(ocel):
     objects = ['items', 'orders', 'packages', 'products', 'employees', 'customers']
@@ -479,10 +482,6 @@ def exercise_3_6(ocel):
     plt.show()
 
 
-def exercise_3_7(ocel):
-    pass
-
-
 def exercise_3_8(ocel):
     primarySalesReps = {}
     secondarySalesReps = {}
@@ -529,17 +528,20 @@ def exercise_3_8(ocel):
     # 1754 196 50
 
     # PrimarySalesRep
-    ocdfg = pm4py.discover_ocdfg(orders_with_primary_log, business_hours=True, business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
+    ocdfg = pm4py.discover_ocdfg(orders_with_primary_log, business_hours=True,
+                                 business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
     ocdfg = filter_ocdfg(ocdfg)
     pm4py.view_ocdfg(ocdfg, performance_aggregation="mean", annotation="performance")
-#
+    #
     # SecondarySalesRep
-    ocdfg = pm4py.discover_ocdfg(orders_with_secondary_log, business_hours=True, business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
+    ocdfg = pm4py.discover_ocdfg(orders_with_secondary_log, business_hours=True,
+                                 business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
     ocdfg = filter_ocdfg(ocdfg)
     pm4py.view_ocdfg(ocdfg, performance_aggregation="mean", annotation="performance")
-#
+    #
     # OtherSalesRep
-    ocdfg = pm4py.discover_ocdfg(orders_with_other_log, business_hours=True, business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
+    ocdfg = pm4py.discover_ocdfg(orders_with_other_log, business_hours=True,
+                                 business_hour_slots=[(6 * 60 * 60, 20 * 60 * 60)])
     ocdfg = filter_ocdfg(ocdfg)
     pm4py.view_ocdfg(ocdfg, performance_aggregation="mean", annotation="performance")
 
@@ -629,7 +631,7 @@ def exercise_3_8_2(ocel):
 if __name__ == '__main__':
     log = pm4py.read.read_ocel2_json(OM_PATH)
 
-    exercise_3_1(log)
+    # exercise_3_1(log)
     # exercise_3_2(log)
     # exercise_3_3(log)
     # exercise_3_4(log)
