@@ -181,7 +181,7 @@ def exercise_3_1(ocel):
     pm4py.view_ocdfg(ocdfg, performance_aggregation="median", annotation="performance")
 
 
-def exercise_3_2(ocel):
+def exercise_3_4(ocel):
     import json
     import pm4py
     from tabulate import tabulate
@@ -268,18 +268,25 @@ def exercise_3_6(ocel):
     pm4py.view_ocdfg(ocdfg=pm4py.discover_ocdfg(shipment_log))
 
 
-def exercise_3_4(ocel):
-    filtered_ocel = pm4py.filter_ocel_event_attribute(ocel=ocel, attribute_key='ocel:activity',
-                                                      attribute_values=['pay order', 'payment reminder'])
-    print(filtered_ocel)
-    print(filtered_ocel.o2o)
+def exercise_3_2(ocel):
+    # Nach "failed delivery" filtern
+    failed_delivery_log = pm4py.filter_ocel_event_attribute(ocel, attribute_key='ocel:activity', attribute_values=['failed delivery'])
 
-    samples_o2o_df = filtered_ocel.o2o.sample(n=100)
-    print(samples_o2o_df)
+    # wert des Felds 'ocel:timestamp' auf den Wert der jeweiligen Stunde reduzieren
+    failed_delivery_log.events['ocel:timestamp'] = failed_delivery_log.events['ocel:timestamp'].apply(lambda x: int(x.time().hour))
 
-    for index, row in samples_o2o_df.iterrows():
-        if (row['ocel:qualifier'] != 'comprises') and (row['ocel:qualifier'] != 'is a'):
-            print(row)
+    # Zu Liste umformen, um Member-Methode "Sort" nutzen zu können
+    failed_delivery_times = failed_delivery_log.events['ocel:timestamp'].tolist()
+
+    # Sortieren (alternativ auch aus dem DataFrame heraus möglich
+    failed_delivery_times.sort()
+
+    # In Histogramm visualisieren
+    plt.hist(x=failed_delivery_times, bins=20)
+    plt.ylabel("Häufigkeit des Werts")
+    plt.xlabel("Tageszeit in Stunden")
+    plt.title('Werteverteilung der Zeitpunkte gescheiterter Zustellungen ')
+    plt.show()
 
 
 def exercise_3_8(ocel):
@@ -635,7 +642,7 @@ if __name__ == '__main__':
     log = pm4py.read.read_ocel2_json(OM_PATH)
 
     # creates artificial O2O relationships based on the object interaction, descendants, inheritance, cobirth, codeath graph
-    log = pm4py.ocel_o2o_enrichment(log)
+    # log = pm4py.ocel_o2o_enrichment(log)
 
     # test = pm4py.discover_objects_graph()
 #
@@ -666,11 +673,11 @@ if __name__ == '__main__':
     # sample_log = pm4py.sample_ocel_objects(log, 1000)
     # clusters = pm4py.cluster_equivalent_ocel(ocel=sample_log, object_type='packages')
 
-
+    exercise_3_2(log)
 
     # exercise_3_1(log)
     # exercise_3_2(log)
-    exercise_3_3(log)
+    # exercise_3_3(log)
     # exercise_3_4(log)
     # exercise_3_5(log)
     # exercise_3_6(log)
