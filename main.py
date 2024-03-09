@@ -270,10 +270,12 @@ def exercise_3_6(ocel):
 
 def exercise_3_2(ocel):
     # Nach "failed delivery" filtern
-    failed_delivery_log = pm4py.filter_ocel_event_attribute(ocel, attribute_key='ocel:activity', attribute_values=['failed delivery'])
+    failed_delivery_log = pm4py.filter_ocel_event_attribute(ocel, attribute_key='ocel:activity',
+                                                            attribute_values=['failed delivery'])
 
     # Wert des Felds 'ocel:timestamp' auf den Wert der jeweiligen Stunde reduzieren
-    failed_delivery_log.events['ocel:timestamp'] = failed_delivery_log.events['ocel:timestamp'].apply(lambda x: int(x.time().hour))
+    failed_delivery_log.events['ocel:timestamp'] = failed_delivery_log.events['ocel:timestamp'].apply(
+        lambda x: int(x.time().hour))
 
     # Zu Liste umformen, um Member-Methode "Sort" nutzen zu können
     failed_delivery_times = failed_delivery_log.events['ocel:timestamp'].tolist()
@@ -641,40 +643,6 @@ def exercise_3_5_2(ocel):
 if __name__ == '__main__':
     log = pm4py.read.read_ocel2_json(OM_PATH)
 
-    # creates artificial O2O relationships based on the object interaction, descendants, inheritance, cobirth, codeath graph
-    # log = pm4py.ocel_o2o_enrichment(log)
-
-    # test = pm4py.discover_objects_graph()
-#
-    # # prints the O2O table
-    # print(log.o2o)
-#
-    # object_descendants_graph = []
-    # object_inheritance_graph = []
-    # object_codeath_graph = []
-    # object_interaction_graph = []
-    # object_cobirth_graph = []
-#
-    # # object_descendants_graph object_inheritance_graph object_codeath_graph object_interaction_graph object_inheritance_graph
-    # for index, row in log.o2o.iterrows():
-    #     if row['ocel:qualifier'] == 'object_descendants_graph':
-    #         object_descendants_graph.append(row)
-    #     elif row['ocel:qualifier'] == 'object_inheritance_graph':
-    #         object_inheritance_graph.append(row)
-    #     elif row['ocel:qualifier'] == 'object_codeath_graph':
-    #         object_codeath_graph.append(row)
-    #     elif row['ocel:qualifier'] == 'object_interaction_graph':
-    #         object_interaction_graph.append(row)
-    #     elif row['ocel:qualifier'] == 'object_cobirth_graph':
-    #         object_cobirth_graph.append(row)
-
-
-
-    # sample_log = pm4py.sample_ocel_objects(log, 1000)
-    # clusters = pm4py.cluster_equivalent_ocel(ocel=sample_log, object_type='packages')
-
-    exercise_3_2(log)
-
     # exercise_3_1(log)
     # exercise_3_2(log)
     # exercise_3_3(log)
@@ -689,8 +657,6 @@ if __name__ == '__main__':
 
     print("--------------------------------------------------------")
 
-# 20s + 14m (create package) + ((0ns + 1m) || (25s)) + ((22m + 2m) || 1min) = 39min 20s || 15min 45s
-# 20s + 1D + 24m
 
 def eof():
     pass
