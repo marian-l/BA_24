@@ -272,7 +272,7 @@ def exercise_3_2(ocel):
     # Nach "failed delivery" filtern
     failed_delivery_log = pm4py.filter_ocel_event_attribute(ocel, attribute_key='ocel:activity', attribute_values=['failed delivery'])
 
-    # wert des Felds 'ocel:timestamp' auf den Wert der jeweiligen Stunde reduzieren
+    # Wert des Felds 'ocel:timestamp' auf den Wert der jeweiligen Stunde reduzieren
     failed_delivery_log.events['ocel:timestamp'] = failed_delivery_log.events['ocel:timestamp'].apply(lambda x: int(x.time().hour))
 
     # Zu Liste umformen, um Member-Methode "Sort" nutzen zu können
